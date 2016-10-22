@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>meter-polyfill</title>
+  <meta name="keywords" content="html5,meter,polyfill">
+  <meta name="description" content="Polyfill for meter element.">
+  <link rel="stylesheet" href="../src/polyfill.scss">
+  <script>var supportMeter = document.createElement('meter').max === 1;</script>
+  <script src="../src/polyfill.js"></script>
+  <link rel="stylesheet" href="test.scss">
+  <script src="test.js"></script>
+</head>
+<body>
+  <div class="container" id="js-container"></div>
+  <div class="container">
+    <div id="js-test-container"></div>
+    <button type="button" onclick="test.inertMeterByHTML()">insert meter By innerHTML</button>
+  </div>
+</body>
+</html>

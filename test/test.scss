@@ -1,0 +1,60 @@
+
+.container {
+  position: relative;
+  margin-left: 220px;
+}
+
+.nav {
+  position: fixed;
+  top: 10px;
+  bottom: 0;
+  left: 10px;
+  width: 200px;
+  overflow: auto;
+}
+
+.nav a {
+  display: block;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  text-decoration: none;
+  color: #fff;
+  background: darkseagreen;
+}
+
+.nav a:hover {
+  background: #ddd;
+}
+
+dt {
+  padding:  10px;
+  border: 1px solid darkseagreen;
+  border-bottom:  0;
+}
+
+dd {
+  border: 1px solid darkseagreen;
+  padding:  10px;
+  margin: 0 0 10px;
+  border-top:  0;
+}
+
+.color,
+.result {
+  display: inline-block;
+  vertical-align: -.2em;
+  margin-left: 15px;
+}
+
+.color span {
+  padding: 0 5px;
+  height: 1em;
+  width: 2em;
+  display: inline-block;
+}
+
+.desc {
+  border: 1px solid red;
+  background: lightyellow;
+  padding: 15px;
+}
