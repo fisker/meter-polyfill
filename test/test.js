@@ -215,6 +215,7 @@
 
     testCase.push({
       'name': 'low=high1',
+      'desc': 'if low>=high && value=low, firefox and chrome show different style.',
       'cases': cases
     });
   })();
@@ -297,6 +298,7 @@
 
     testCase.push({
       'name': 'optimum<low',
+      'desc': 'if optimum<low && value=low, firefox and chrome show different style.',
       'cases': cases
     });
   })();
@@ -533,7 +535,7 @@
     optimum: 'meter-optimum-value',
     suboptimum: 'meter-suboptimum-value',
     subsuboptimum: 'meter-even-less-good-value'
-  }
+  };
 
   function calcClass(value, low, high, min, max, optimum) {
     // fix
@@ -644,7 +646,7 @@
       html.push([
         '<div class="page" id="' + caseId + '">',
         '<h1>' + caseName + '</h1>',
-        caseDesc ? '<div class="desc">' + caseDesc + '</div>' : '',
+        caseDesc ? '<div class="desc">' + encodeHTML(caseDesc) + '</div>' : '',
         '<dl>' + casesHTML.join('') + '</dl>',
         '</div>'
       ].join(''));
@@ -677,9 +679,19 @@
       } catch(_) {}
 
       try {
-        var firefoxMeterbarColor = getComputedStyle(meter, '::-moz-meter-bar').backgroundImage;
+        var resultStyle = colorSpan.className;
         var resultColor = getComputedStyle(colorSpan).backgroundImage;
-        if (firefoxMeterbarColor === resultColor) {
+        var firefoxMeterbarColor = getComputedStyle(meter, '::-moz-meter-bar').backgroundImage;
+        var firefoxMeterbarClass = '';
+        if(firefoxMeterbarColor.indexOf('rgb(170, 221, 119)') > -1 ){
+          firefoxMeterbarClass = METER_VALUE_CLASSES.optimum
+        } else if(firefoxMeterbarColor.indexOf('rgb(255, 238, 119)') > -1 ){
+          firefoxMeterbarClass = METER_VALUE_CLASSES.suboptimum
+        } else if(firefoxMeterbarColor.indexOf('rgb(255, 119, 119)') > -1 ){
+          firefoxMeterbarClass = METER_VALUE_CLASSES.subsuboptimum
+        }
+
+        if (firefoxMeterbarColor === resultColor || firefoxMeterbarClass === resultStyle) {
           passed = true;
         }
       } catch(_) {}

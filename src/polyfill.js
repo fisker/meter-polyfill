@@ -234,7 +234,7 @@
       }
 
       // firefox show diffently from chrome when
-      // high > optimum && value === high
+      // value === high
     } else if (optimum < low) {
       if (value > low && value <= high) {
         valueClass = METER_VALUE_CLASSES.suboptimum;
@@ -289,10 +289,10 @@
         setValue(e.target);
       });
 
-      on(documentElement, 'propertychange', function(e) {
-        console.log('propertychange');
-        console.log(e);
-      });
+      // on(documentElement, 'propertychange', function(e) {
+      //   console.log('propertychange');
+      //   console.log(e);
+      // });
     }
     isObservered = true;
   }
