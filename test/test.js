@@ -559,7 +559,7 @@
     }
 
     if (optimum > max || optimum < min) {
-      optimum = min + (max - high) / 2;
+      optimum = min + (max - min) / 2;
     }
 
     var valueClass = METER_VALUE_CLASSES.optimum;
@@ -778,15 +778,13 @@
     }
   };
 
-
-
   window.onload = function() {
     render();
     (function check() {
       var meters = document.getElementsByTagName('meter');
       var done = true;
       each(meters, function(meter) {
-        if ((typeof meter.max !== 'number') || (!supportMeter && !meter.hasAttribute('_polyfill'))) {
+        if ((typeof meter.max === 'undefined') || (!supportMeter && !meter.hasAttribute('_polyfill'))) {
           window.setTimeout(check, 500);
           done = false;
           return true;

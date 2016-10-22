@@ -11,14 +11,18 @@
   var documentElement = document.documentElement;
   // there is no moz/ms/o vendor prefix
   var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+  meterElement.low = '1';
+  meterElement.setAttribute('high', '1');
 
   var support = {
     MutationObserver: typeof window.MutationObserver !== 'undefined',
     addEventListener: 'addEventListener' in document,
-    attachEvent: 'attachEvent' in document
+    attachEvent: 'attachEvent' in document,
+    syncAttribute: meterElement.getAttribute('low') === '1' && meterElement.high === '1',
+    unknownElement: !!meterElement.constructor,
+    hasAttribute: !!meterElement.hasAttribute
   };
 
-  var prototype = meterElement.constructor.prototype;
   var METER_VALUE_CLASSES = {
     inner: 'meter-inner-element',
     bar: 'meter-bar',
@@ -68,8 +72,16 @@
     }
   }
 
+  function hasAttribute(name) {
+    if (support.hasAttribute) {
+      return this.hasAttribute(name);
+    } else {
+      return this.getAttribute(name) !== null;
+    }
+  }
+
   function isMeter(el) {
-    return el && el.tagName.toUpperCase() === 'METER';
+    return el && el.tagName && el.tagName.toUpperCase() === 'METER';
   }
 
   function polyfillShadow(context) {
@@ -81,115 +93,124 @@
     }
 
     each(meters, function(meter) {
-      if (isMeter(meter) && !meter.hasAttribute('_polyfill')) {
+      if (isMeter(meter) && !hasAttribute.call(meter, '_polyfill')) {
         meter.innerHTML = METER_SHADOW_HTML;
         meter.setAttribute('_polyfill', '');
-        // fix
-        if (meter.max < meter.min) {
-          meter.max = meter.min;
-        }
-        if (meter.low < meter.min) {
-          meter.low = meter.min;
-        }
+        fixValue.call(meter, [
+          'max',
+          'low',
+          'high',
+          'value',
+          'optimum',
+        ]);
+        setValue(meter);
+      }
+    });
+  }
+
+  function fixValue(fixProps) {
+    var meter = this;
+    each(fixProps, function(prop) {
+      if (prop === 'max' && meter.max < meter.min) {
+        meter.max = meter.min;
+      } else if (prop === 'low' && meter.low < meter.min) {
+        meter.low = meter.min;
+      } else if (prop === 'high') {
         if (meter.high > meter.max) {
           meter.high = meter.max;
         }
         if (meter.high < meter.low) {
           meter.high = meter.low;
         }
-        if (meter.value < meter.min) {
+      } else if (prop === 'value') {
+        if ((meter.value < meter.min) || (typeof meter.value === 'undefined')) {
           meter.value = meter.min;
         }
         if (meter.value > meter.max) {
           meter.value = meter.max;
         }
-
-        if (meter.hasAttribute('optimum') && (meter.optimum < meter.min || meter.optimum > meter.max)) {
-          meter.removeAttribute('optimum');
+      } else if (prop === 'optimum') {
+        if ((meter.optimum < meter.min || meter.optimum > meter.max) || (typeof meter.optimum === 'undefined')) {
+          if (isMeter(meter) && hasAttribute.call(meter, 'optimum')) {
+            meter.removeAttribute('optimum');
+          } else {
+            meter.optimum = meter.min + (meter.max - meter.min) / 2;
+          }
         }
-        setValue(meter);
       }
     });
   }
 
+  var isGetterDefined = false;
   function polyfillGetterSetter() {
-    each(meterAttrs, function(prop) {
-      var initalValue = METER_INITAL_VALUES[prop];
-      Object.defineProperty(prototype, prop, {
-        set: function(value) {
-          if (!isMeter(this)) {
-            return
-          }
-          prop = prop.toLowerCase();
-          value = + value;
-          switch (prop) {
-            case 'min':
-              this.setAttribute(prop, value);
-              if (this.max < value) {
-                this.max = value;
-              }
-              break;
-            case 'max':
-              this.setAttribute(prop, value);
-              if (this.min > value) {
-                this.min = value;
-              }
-              break;
-            case 'low':
-              value = Math.min(Math.max(value, this.min), this.max);
-              this.setAttribute(prop, value);
-              if (this.high < value) {
-                this.high = value;
-              }
-              break;
-            case 'high':
-              value = Math.min(Math.max(value, this.min, this.low), this.max);
-              this.setAttribute(prop, value);
-              break;
-            case 'optimum':
-              value = Math.min(Math.max(value, this.min), this.max);
-              this.setAttribute(prop, value);
-              break;
-            default:
-              this.setAttribute(prop, value);
-          }
-
-          if (prop === 'min' || prop === 'max') {
-            if (this.low < this.min || this.low > this.max) {
-              this.low = Math.min(Math.max(this.min, this.low), this.max)
-            }
-            if (this.high < this.min || this.high > this.max) {
-              this.high = Math.min(Math.max(this.min, this.low), this.max);
-            }
-            if (this.value < this.min) {
-              this.value = this.min;
-            }
-            if (this.value > this.max) {
-              this.value = this.max;
-            }
-            if (this.hasAttribute('optimum') && (this.optimum < this.min || this.optimum > this.max)) {
-              this.removeAttribute('optimum');
-            }
-          }
-          setValue(this);
-        },
-        get: function() {
-          if (isMeter(this)) {
-            if (this.hasAttribute(prop)) {
-              return +this.getAttribute(prop);
-            } else if (prop === 'low') {
-              return this.min;
-            } else if (prop === 'high') {
-              return this.max;
-            } else if (prop === 'optimum') {
-              return (this.max - this.min) / 2 + this.min;
-            } else if (prop === 'value') {
-              return this.min;
-            }
-            return initalValue;
-          }
+    if (isGetterDefined) {
+      return;
+    }
+    isGetterDefined = true;
+    var prototype = meterElement.constructor.prototype;
+    function setter(prop) {
+      return function(value) {
+        if (!isMeter(this)) {
+          return
         }
-      });
+        prop = prop.toLowerCase();
+        value = + value;
+        switch (prop) {
+          case 'min':
+            this.setAttribute(prop, value);
+            fixValue.call(this, ['max', 'low', 'high', 'value', 'optimum']);
+            break;
+          case 'max':
+            value = Math.max(value, this.min);
+            this.setAttribute(prop, value);
+            fixValue.call(this, ['low', 'high', 'value', 'optimum']);
+            break;
+          case 'low':
+            value = Math.min(Math.max(value, this.min), this.max);
+            this.setAttribute(prop, value);
+            fixValue.call(this, ['high']);
+            break;
+          case 'high':
+            value = Math.min(Math.max(value, this.min, this.low), this.max);
+            this.setAttribute(prop, value);
+            break;
+          case 'optimum':
+            value = Math.min(Math.max(value, this.min), this.max);
+            this.setAttribute(prop, value);
+            break;
+          default:
+            this.setAttribute(prop, value);
+        }
+        setValue(this);
+      };
+    }
+
+    function getter(prop) {
+      return function () {
+        if (isMeter(this)) {
+          if (hasAttribute.call(this, prop)) {
+            return +this.getAttribute(prop);
+          } else if (prop === 'low') {
+            return this.min;
+          } else if (prop === 'high') {
+            return this.max;
+          } else if (prop === 'optimum') {
+            return (this.max - this.min) / 2 + this.min;
+          } else if (prop === 'value') {
+            return this.min;
+          }
+          return METER_INITAL_VALUES[prop];
+        }
+      };
+    }
+
+    each(meterAttrs, function(prop) {
+      var props = {};
+      if (!support.syncAttribute) {
+        props.set = setter(prop);
+      }
+      props.get = getter(prop);
+      Object.defineProperty(prototype, prop, props);
     });
   }
 
@@ -204,12 +225,29 @@
       return polyfillShadow(meter);
     }
 
-    var value = +meter.value;
-    var max = +meter.max;
-    var min = +meter.min;
-    var low = +meter.low;
-    var high = +meter.high;
-    var optimum = +meter.optimum;
+    var values = {};
+    each(meterAttrs, function(attr) {
+      if (support.unknownElement) {
+        values[attr] = +meter[attr];
+      } else {
+        if (hasAttribute.call(meter, attr)) {
+          values[attr] = +meter.getAttribute(attr);
+        } else {
+          values[attr] = METER_INITAL_VALUES[attr];
+        }
+      }
+    });
+
+    if (support.syncAttribute) {
+      fixValue.call(values, ['max', 'low', 'high', 'value', 'optimum']);
+    }
+
+    var min = values.min;
+    var max = values.max;
+    var low = values.low;
+    var high = values.high;
+    var optimum = values.optimum;
+    var value = values.value;
 
     var valueClass = METER_VALUE_CLASSES.optimum;
     if (
@@ -253,6 +291,7 @@
     }
 
     var width = min === max ? 0 : (value - min) / (max - min) * 100 + '%';
+
     valueEl.className = valueClass;
     valueEl.style.width = width;
   }
@@ -289,16 +328,21 @@
         setValue(e.target);
       });
 
-      // on(documentElement, 'propertychange', function(e) {
-      //   console.log('propertychange');
-      //   console.log(e);
+      // each(document.getElementsByTagName('meter'), function(meter) {
+      //   on(meter, 'propertychange', function(e) {
+      //     console.log('propertychange');
+      //     console.log(e);
+      //   });
       // });
+
     }
     isObservered = true;
   }
 
   function polyfill() {
-    polyfillGetterSetter();
+    if (support.unknownElement) {
+      polyfillGetterSetter();
+    }
     polyfillShadow();
     observer();
   }
@@ -318,10 +362,10 @@
     (function doScroll() {
       try {
         documentElement.doScroll('left');
-        polyfill();
       } catch (_) {
         window.setTimeout(doScroll, 50);
       }
+      polyfill();
     })();
   }
 })(this, document);
