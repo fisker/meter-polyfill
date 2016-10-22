@@ -367,6 +367,151 @@
   })();
 
 
+  // min
+  (function() {
+    var cases = [];
+    var prop = {min: .4};
+    each([.4, .5, .7], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'min1',
+      'cases': cases
+    });
+  })();
+
+  // min
+  (function() {
+    var cases = [];
+    var prop = {min: .5};
+    each([.4, .5, .7], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'min2',
+      'cases': cases
+    });
+  })();
+
+  // min
+  (function() {
+    var cases = [];
+    var prop = {min: 1};
+    each([.4, .5, .7, 1], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'min3',
+      'cases': cases
+    });
+  })();
+
+  // min
+  (function() {
+    var cases = [];
+    var prop = {min: 1.1};
+    each([.4, .5, .7, 1, 1.1], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'min4',
+      'cases': cases
+    });
+  })();
+
+  // max
+  (function() {
+    var cases = [];
+    var prop = {max: .6};
+    each([.5, .7], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'max1',
+      'cases': cases
+    });
+  })();
+
+  // max
+  (function() {
+    var cases = [];
+    var prop = {max: .5};
+    each([.4, .5, .7], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'max2',
+      'cases': cases
+    });
+  })();
+
+  // max
+  (function() {
+    var cases = [];
+    var prop = {max: .4};
+    each([.1, .4, .5], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'max3',
+      'cases': cases
+    });
+  })();
+
+  // max
+  (function() {
+    var cases = [];
+    var prop = {max: 0};
+    each([-1.1, 0, .1, .5], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'max4',
+      'cases': cases
+    });
+  })();
+
+  // max
+  (function() {
+    var cases = [];
+    var prop = {max: -1};
+    each([-1.1, 0, .5], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'max5',
+      'cases': cases
+    });
+  })();
+
+
   var METER_INITAL_VALUES = {
     min: 0,
     max: 1,
@@ -391,7 +536,6 @@
   }
 
   function calcClass(value, low, high, min, max, optimum) {
-
     // fix
     if (max < min) {
       max = min;
@@ -404,6 +548,16 @@
     }
     if (high < low) {
       high = low;
+    }
+    if (value < min) {
+      value = min;
+    }
+    if (value > max) {
+      value = max;
+    }
+
+    if (optimum > max || optimum < min) {
+      optimum = min + (max - high) / 2;
     }
 
     var valueClass = METER_VALUE_CLASSES.optimum;
@@ -449,6 +603,7 @@
 
     return valueClass;
   }
+
 
   // render
   function render() {
@@ -540,26 +695,74 @@
       meter.parentNode.appendChild(result);
     });
 
-    alert(failedCounter + ' test case failed.')
+    if (failedCounter) {
+      alert(failedCounter + ' of ' + meters.length + ' test case failed.');
+    } else {
+      alert('all test passed');
+    }
   }
 
+
+  function isPolyfilledMeter(meter) {
+    if (!supportMeter) {
+      return meter.max === 1 && meter.hasAttribute('_polyfill');
+    } else {
+      return meter.max === 1;
+    }
+  }
 
   window.test = {
     inertMeterByHTML: function(){
       var container = document.getElementById('js-test-container');
-      container.innerHTML = '<meter value="0.5"></meter>';
-      var success = false;
-      try {
-        var meter = container.getElementsByTagName('meter')[0];
-        if (meter.max === 1) {
-          if (!supportMeter) {
-            success = meter.hasAttribute('_polyfill');
-          } else {
-            success = true;
-          }
-        }
-      } catch(_) {}
-      alert(success? 'success' : 'failed')
+      var id = 'meter-' + mkId();
+      container.innerHTML += '<meter id="' + id + '" value="0.5"></meter>';
+      var meter = document.getElementById(id);
+      if (isPolyfilledMeter(meter)) {
+        alert('success');
+      } else {
+        alert('failed');
+      }
+    },
+    inertMeterByCreateElement: function(){
+      var container = document.getElementById('js-test-container');
+      var id = 'meter-' + mkId();
+      var meter = document.createElement('meter');
+      meter.value = 0.5;
+      meter.id = id;
+      container.appendChild(meter);
+      if (isPolyfilledMeter(meter)) {
+        alert('success');
+      } else {
+        alert('failed');
+      }
+    },
+    changeAttr: function() {
+      var container = document.getElementById('js-test-container');
+      var id = 'meter-' + mkId();
+      var meter = document.createElement('meter');
+      meter.value = 0.2;
+      meter.id = id;
+      container.appendChild(meter);
+      meter.setAttribute('value', .8);
+      if (isPolyfilledMeter(meter) && meter.value === .8) {
+        alert('success');
+      } else {
+        alert('failed');
+      }
+    },
+    changeValue: function() {
+      var container = document.getElementById('js-test-container');
+      var id = 'meter-' + mkId();
+      var meter = document.createElement('meter');
+      meter.value = 0.2;
+      meter.id = id;
+      container.appendChild(meter);
+      meter.value = .8;
+      if (isPolyfilledMeter(meter) && meter.value === .8) {
+        alert('success');
+      } else {
+        alert('failed');
+      }
     }
   };
 
@@ -571,7 +774,7 @@
       var meters = document.getElementsByTagName('meter');
       var done = true;
       each(meters, function(meter) {
-        if (meter.max !== 1 || (!supportMeter && !meter.hasAttribute('_polyfill'))) {
+        if ((typeof meter.max !== 'number') || (!supportMeter && !meter.hasAttribute('_polyfill'))) {
           window.setTimeout(check, 500);
           done = false;
           return true;

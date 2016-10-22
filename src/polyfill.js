@@ -5,7 +5,7 @@
 
   // native support
   if (meterElement.max === 1) {
-    return;
+    // return;
   }
 
   var documentElement = document.documentElement;
@@ -19,15 +19,13 @@
   };
 
   var prototype = meterElement.constructor.prototype;
-  var setAttribute = prototype.setAttribute;
-  var removeAttribute = prototype.removeAttr;
   var METER_VALUE_CLASSES = {
     inner: 'meter-inner-element',
     bar: 'meter-bar',
     optimum: 'meter-optimum-value',
     suboptimum: 'meter-suboptimum-value',
     subsuboptimum: 'meter-even-less-good-value'
-  }
+  };
 
   var METER_SHADOW_HTML = [
     '<div class="' + METER_VALUE_CLASSES.inner + '">',
@@ -43,7 +41,7 @@
     max: 1,
     low: 0,
     high: 1,
-    value: 0,
+    value: undefined,
     optimum: undefined
   };
 
@@ -71,7 +69,7 @@
   }
 
   function isMeter(el) {
-    return el && el.tagName.toUpperCase() === 'METER'
+    return el && el.tagName.toUpperCase() === 'METER';
   }
 
   function polyfillShadow(context) {
@@ -99,19 +97,81 @@
         if (meter.high < meter.low) {
           meter.high = meter.low;
         }
+        if (meter.value < meter.min) {
+          meter.value = meter.min;
+        }
+        if (meter.value > meter.max) {
+          meter.value = meter.max;
+        }
+
+        if (meter.hasAttribute('optimum') && (meter.optimum < meter.min || meter.optimum > meter.max)) {
+          meter.removeAttribute('optimum');
+        }
         setValue(meter);
       }
     });
   }
 
-  function polyfillAttr() {
+  function polyfillGetterSetter() {
     each(meterAttrs, function(prop) {
       var initalValue = METER_INITAL_VALUES[prop];
       Object.defineProperty(prototype, prop, {
         set: function(value) {
-          if (isMeter(this)) {
-            return setAttribute.call(this, prop, value);
+          if (!isMeter(this)) {
+            return
           }
+          prop = prop.toLowerCase();
+          value = + value;
+          switch (prop) {
+            case 'min':
+              this.setAttribute(prop, value);
+              if (this.max < value) {
+                this.max = value;
+              }
+              break;
+            case 'max':
+              this.setAttribute(prop, value);
+              if (this.min > value) {
+                this.min = value;
+              }
+              break;
+            case 'low':
+              value = Math.min(Math.max(value, this.min), this.max);
+              this.setAttribute(prop, value);
+              if (this.high < value) {
+                this.high = value;
+              }
+              break;
+            case 'high':
+              value = Math.min(Math.max(value, this.min, this.low), this.max);
+              this.setAttribute(prop, value);
+              break;
+            case 'optimum':
+              value = Math.min(Math.max(value, this.min), this.max);
+              this.setAttribute(prop, value);
+              break;
+            default:
+              this.setAttribute(prop, value);
+          }
+
+          if (prop === 'min' || prop === 'max') {
+            if (this.low < this.min || this.low > this.max) {
+              this.low = Math.min(Math.max(this.min, this.low), this.max)
+            }
+            if (this.high < this.min || this.high > this.max) {
+              this.high = Math.min(Math.max(this.min, this.low), this.max);
+            }
+            if (this.value < this.min) {
+              this.value = this.min;
+            }
+            if (this.value > this.max) {
+              this.value = this.max;
+            }
+            if (this.hasAttribute('optimum') && (this.optimum < this.min || this.optimum > this.max)) {
+              this.removeAttribute('optimum');
+            }
+          }
+          setValue(this);
         },
         get: function() {
           if (isMeter(this)) {
@@ -123,101 +183,36 @@
               return this.max;
             } else if (prop === 'optimum') {
               return (this.max - this.min) / 2 + this.min;
-            } else {
-              return initalValue;
+            } else if (prop === 'value') {
+              return this.min;
             }
+            return initalValue;
           }
         }
       });
-    });
-
-    Object.defineProperty(prototype, 'setAttribute', {
-      value: function(name, value) {
-        if (!isMeter(this)) {
-          setAttribute.call(this, name, value);
-        }
-        name = name.toLowerCase();
-        switch(name) {
-          case 'min':
-            setAttribute.call(this, name, value);
-            if (this.max < value) {
-              setAttribute.call(this, 'max', value);
-            }
-            break;
-          case 'max':
-            setAttribute.call(this, name, value);
-            if (this.min > value) {
-              setAttribute.call(this, 'min', value);
-            }
-            break;
-          case 'low':
-            value = Math.min(Math.max(value, this.min), this.max);
-            setAttribute.call(this, name, value);
-            if (this.high < value) {
-              setAttribute.call(this, 'high', value);
-            }
-            break;
-          case 'high':
-            value = Math.min(Math.max(value, this.min), this.max);
-            setAttribute.call(this, name, value);
-            if (this.low > value) {
-              setAttribute.call(this, 'low', value);
-            }
-            break;
-          case 'optimum':
-            value = Math.min(Math.max(value, this.min), this.max);
-            setAttribute.call(this, name, value);
-            break;
-          default:
-            break;
-        }
-
-        if (name === 'min' || name === 'max') {
-          if (this.low < this.min || this.low > this.max) {
-            setAttribute.call(this, 'low', Math.min(Math.max(this.min, this.low), this.max));
-          }
-          if (this.high < this.min || this.high > this.max) {
-            setAttribute.call(this, 'high', Math.min(Math.max(this.min, this.low), this.max));
-          }
-          if (this.hasAttribute('optinum') && (this.optinum < this.min || this.optinum > this.max)) {
-            this.removeAttribute('optinum');
-          }
-        }
-
-        setValue(this);
-        return setAttribute.call(this, name, value);
-      }
-    });
-
-    Object.defineProperty(prototype, 'removeAttribute', {
-      value: function(name) {
-        if (isMeter(this)) {
-          setValue(this);
-        }
-        return removeAttribute.call(this, name);
-      }
     });
   }
 
   function setValue(meter) {
     meter = meter || this;
+    if (!isMeter(meter)) {
+      return;
+    }
     // div should be replaced
     var valueEl = meter.getElementsByTagName('div')[2];
     if (!valueEl) {
-      throw ('meter not polyfilled');
+      return polyfillShadow(meter);
     }
 
-    var value = meter.value;
-    var max = meter.max;
-    var min = meter.min;
-    var low = meter.low;
-    var high = meter.high;
-
-    var optimum = meter.optimum;
+    var value = +meter.value;
+    var max = +meter.max;
+    var min = +meter.min;
+    var low = +meter.low;
+    var high = +meter.high;
+    var optimum = +meter.optimum;
 
     var valueClass = METER_VALUE_CLASSES.optimum;
     if (
-      low === high ||
       high === max ||
       low === min ||
       (optimum >= low && optimum <= high)
@@ -227,9 +222,19 @@
         (low > optimum && value > low) ||
         (high < optimum && value < high) ||
         (high >= optimum && value > high)
-      ){
+      ) {
         valueClass = METER_VALUE_CLASSES.suboptimum;
       }
+    } else if (low === high) {
+      if (
+        (low <= optimum && value < low) ||
+        (high > optimum && value > high)
+      ) {
+        valueClass = METER_VALUE_CLASSES.subsuboptimum;
+      }
+
+      // firefox show diffently from chrome when
+      // high > optimum && value === high
     } else if (optimum < low) {
       if (value > low && value <= high) {
         valueClass = METER_VALUE_CLASSES.suboptimum;
@@ -242,6 +247,9 @@
       } else if (value < low) {
         valueClass = METER_VALUE_CLASSES.subsuboptimum;
       }
+
+      // firefox show diffently from chrome when
+      // value === high
     }
 
     var width = min === max ? 0 : (value - min) / (max - min) * 100 + '%';
@@ -249,12 +257,16 @@
     valueEl.style.width = width;
   }
 
+  var isObservered = false;
   function observer() {
+    if (isObservered) {
+      return;
+    }
     if (MutationObserver) {
       var observer = new MutationObserver(function(mutations) {
-        for (var i = 0, len = mutations.length; i < len; i ++) {
+        for (var i = 0, len = mutations.length; i < len; i++) {
           var type = mutations[i].type;
-          var target = mutations[i].target
+          var target = mutations[i].target;
           if (type === 'attributes') {
             setValue(target);
           } else {
@@ -273,19 +285,23 @@
         polyfillShadow(e.target);
       });
 
+      on(documentElement, 'DOMAttrModified', function(e) {
+        setValue(e.target);
+      });
+
       on(documentElement, 'propertychange', function(e) {
         console.log('propertychange');
         console.log(e);
       });
     }
+    isObservered = true;
   }
 
   function polyfill() {
-    polyfillAttr();
+    polyfillGetterSetter();
     polyfillShadow();
     observer();
   }
-
 
   if (document.readyState === 'complete') {
     polyfill();
