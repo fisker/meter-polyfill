@@ -537,20 +537,20 @@
         var params = props.join(' ');
         var meterId = 'meter-' + mkId();
 
-        var values = assign({
-          min: METER_INITAL_VALUES.min,
-          max: METER_INITAL_VALUES.max,
-          low: METER_INITAL_VALUES.low,
-          high: METER_INITAL_VALUES.high
-        }, test);
+        // console.log(caseName);
+        var values = assign({}, METER_INITAL_VALUES, test);
+        // console.log(values);
         values = meterPolyfill.fix(values);
-        var level = meterPolyfill.calc(values).level;
+        // console.log(values);
+        var level = meterPolyfill.calc(values);
+        // console.log(meterPolyfill.calc(values));
 
         casesHTML.push([
           '<dt>' + params + '</dt>',
           '<dd>',
             '<meter id="' + meterId + '"' + attrs + '></meter>',
-            '<div class="color">color: <span class="' + METER_VALUE_CLASSES[level] + '"></span></div>',
+            '<div class="color">color: <span class="' + METER_VALUE_CLASSES[level.level] + '"></span></div>',
+            '<div class="percentage">percentage: <span>' + level.percentage.toFixed(2) + '</span></div>',
           '</dd>'
         ].join(''));
       });
@@ -576,53 +576,102 @@
   }
 
   function testResult() {
+    var testMeter = document.createElement('meter');
+    testMeter.value = .5;
+    var isFirfoxMeter = getComputedStyle(testMeter, '::-moz-meter-bar').width === '50%';
+
     var meters = document.getElementsByTagName('meter');
     var failedCounter = 0;
     each(meters, function(meter) {
-      var passed = false;
+
+      var resultHTML = [];
+      var colorPassed;
+      var percentagePassed;
       var colorSpan = meter.nextSibling.getElementsByTagName('span')[0];
+      var percentageSpan = meter.nextSibling.nextSibling.getElementsByTagName('span')[0];
 
-      try {
-        var pollyfillColor = meter.getElementsByTagName('div')[2].className;
-        var resultColor = colorSpan.className;
-        if (pollyfillColor === resultColor) {
-          passed = true;
-        }
-      } catch(_) {}
 
-      try {
-        var resultStyle = colorSpan.className;
-        var resultColor = getComputedStyle(colorSpan).backgroundImage;
-        var firefoxMeterbarColor = getComputedStyle(meter, '::-moz-meter-bar').backgroundImage;
-        var firefoxMeterbarClass = '';
-        if(firefoxMeterbarColor.indexOf('rgb(170, 221, 119)') > -1 ){
-          firefoxMeterbarClass = METER_VALUE_CLASSES.optimum
-        } else if(firefoxMeterbarColor.indexOf('rgb(255, 238, 119)') > -1 ){
-          firefoxMeterbarClass = METER_VALUE_CLASSES.suboptimum
-        } else if(firefoxMeterbarColor.indexOf('rgb(255, 119, 119)') > -1 ){
-          firefoxMeterbarClass = METER_VALUE_CLASSES.subsuboptimum
-        }
+      var resultColorLevel = (function() {
+        var className = colorSpan.className;
+        var resultColorLevel;
+        each(METER_VALUE_CLASSES, function(style, key) {
+          if (style === className){
+            resultColorLevel = key;
+            return true;
+          }
+        });
+        return resultColorLevel;
+      })();
 
-        if (firefoxMeterbarColor === resultColor || firefoxMeterbarClass === resultStyle) {
-          passed = true;
-        }
-      } catch(_) {}
+      var resultPercent = + percentageSpan.innerHTML;
+
+      var meterColorLevel = (function() {
+        // if (isFirfoxMeter) {
+          try {
+            var firefoxBg = getComputedStyle(meter, '::-moz-meter-bar').backgroundImage;
+            if(firefoxMeterbarColor.indexOf('rgb(170, 221, 119)') > -1 ){
+              return LEVEL_OPTIMUN;
+            } else if(firefoxMeterbarColor.indexOf('rgb(255, 238, 119)') > -1 ){
+              return LEVEL_SUBOPTIMUN;
+            } else if(firefoxMeterbarColor.indexOf('rgb(255, 119, 119)') > -1 ){
+              return LEVEL_SUBSUBOPTIMUN;
+            }
+          } catch(_) {}
+        // } else {
+          try {
+            var resultColorLevel;
+            var pollyfillColor = meter.getElementsByTagName('div')[2].className;
+            each(METER_VALUE_CLASSES, function(style, key) {
+              if (style === pollyfillColor){
+                resultColorLevel = key;
+                return true;
+              }
+            });
+            return resultColorLevel;
+          } catch(_) {}
+        // }
+      })();
+
+      var meterPercent = (function() {
+        // if (isFirfoxMeter) {
+        // } else {
+          try {
+            var pollyfillPercent = meter.getElementsByTagName('div')[2].style.width;
+            return +(pollyfillPercent + '').replace('%', '');
+          } catch(_) {}
+        // }
+          try {
+            var firefoxWidth = getComputedStyle(meter, '::-moz-meter-bar').width;
+            return +(firefoxWidth + '').replace('%', '');
+          } catch(_) {}
+      })();
+
+      if (typeof meterColorLevel !=='undefined' && typeof resultColorLevel !=='undefined') {
+        colorPassed = meterColorLevel === resultColorLevel;
+        resultHTML.push('<span style="color:' + (colorPassed ? 'green' : 'red') + '">color:' + (colorPassed ? '√' : '×') + '</span>');
+      }
+
+      if (typeof meterPercent !=='undefined' && typeof resultPercent !=='undefined') {
+        percentagePassed = Math.abs(meterPercent - resultPercent) < 0.011;
+        resultHTML.push('<span style="color:' + (percentagePassed ? 'green' : 'red') + '">percentage:' + (percentagePassed ? '√ ' : '× ') + '</span>');
+      }
 
       var result = document.createElement('div');
       result.className = 'result';
-      result.innerHTML = passed ? '<span style="color:green">√ passed</span>' : '<span style="color:red">× failed</span>';
+      result.innerHTML = resultHTML.length ? resultHTML.join(', ') : '<span style="color:gray">? unknown</span>';
 
-      if (!passed) {
+      if (colorPassed === false || percentagePassed === false) {
         failedCounter ++;
       }
 
       meter.parentNode.appendChild(result);
+      if (colorPassed === true && percentagePassed === true) {
+        meter.parentNode.className = 'passed';
+      }
     });
 
     if (failedCounter) {
       alert(failedCounter + ' of ' + meters.length + ' test case failed.');
-    } else {
-      alert('all test passed');
     }
   }
 
@@ -687,6 +736,20 @@
       } else {
         alert('failed');
       }
+    },
+    hidePassed: function() {
+      each(document.getElementsByTagName('dd'), function(dd) {
+        if (dd.className === 'passed') {
+          dd.style.display = 'none';
+          var dt = dd.previousSibling;
+          dt.style.display = 'none';
+          var dl = dd.parentNode;
+          var div = dl.parentNode;
+          if (dl.getBoundingClientRect().height === 0) {
+            div.style.display = 'none';
+          }
+        }
+      });
     }
   };
 

@@ -1,10 +1,12 @@
 meter {
-  appearance: meter;
+  -moz-appearance: meterbar;
+  -webkit-appearance: meter;
   box-sizing: border-box;
   display: inline-block;
   height: 1em;
   width: 5em;
   vertical-align: -0.2em;
+  -moz-user-select: none;
 }
 
 .meter-inner-element {
@@ -25,6 +27,7 @@ meter {
 .meter-optimum-value,
 .meter-suboptimum-value,
 .meter-even-less-good-value {
+  -moz-appearance: meterchunk;
   max-width: 100%;
   height: 100%;
   box-sizing: border-box;

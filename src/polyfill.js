@@ -106,17 +106,17 @@
     return el && el.tagName && el.tagName.toUpperCase() === METER_TAGNAME;
   }
 
-  function fixValue(meter, props) {
+  function fixProps(meter, props) {
     each(props || METER_PROPS, function(prop) {
       switch (prop) {
         case PROP_MAX:
-          if (meter[PROP_MAX] < meter[PROP_MAX]) {
-            meter[PROP_MAX] = meter[PROP_MAX];
+          if (meter[PROP_MAX] < meter[PROP_MIN]) {
+            meter[PROP_MAX] = meter[PROP_MIN];
           }
           break;
         case PROP_LOW:
-          if (meter[PROP_LOW] < meter[PROP_MAX]) {
-            meter[PROP_LOW] = meter[PROP_MAX];
+          if (meter[PROP_LOW] < meter[PROP_MIN]) {
+            meter[PROP_LOW] = meter[PROP_MIN];
           }
           break;
         case PROP_HIGH:
@@ -129,10 +129,10 @@
           break;
         case PROP_VALUE:
           if (
-            (meter[PROP_VALUE] < meter[PROP_MAX]) ||
+            (meter[PROP_VALUE] < meter[PROP_MIN]) ||
             (typeof meter[PROP_VALUE] === 'undefined')
           ) {
-            meter[PROP_VALUE] = meter[PROP_MAX];
+            meter[PROP_VALUE] = meter[PROP_MIN];
           }
           if (meter[PROP_VALUE] > meter[PROP_MAX]) {
             meter[PROP_VALUE] = meter[PROP_MAX];
@@ -140,13 +140,13 @@
           break;
         case PROP_OPTIMUN:
           if (
-            (meter[PROP_OPTIMUN] < meter[PROP_MAX] || meter[PROP_OPTIMUN] > meter[PROP_MAX]) ||
-            (typeof meter[PROP_OPTIMUN] === 'undefined')
+            (typeof meter[PROP_OPTIMUN] === 'undefined') ||
+            (meter[PROP_OPTIMUN] < meter[PROP_MIN] || meter[PROP_OPTIMUN] > meter[PROP_MAX])
           ) {
-            if (isMeter(meter) && hasAttribute(meter, PROP_OPTIMUN)) {
+            if (isMeter(meter)) {
               meter.removeAttribute(PROP_OPTIMUN);
             } else {
-              meter[PROP_OPTIMUN] = meter[PROP_MAX] + (meter[PROP_MAX] - meter[PROP_MAX]) / 2;
+              meter[PROP_OPTIMUN] = meter[PROP_MIN] + (meter[PROP_MAX] - meter[PROP_MIN]) / 2;
             }
           }
           break;
@@ -186,7 +186,7 @@
         (low <= optimum && value < low) ||
         (high > optimum && value > high)
       ) {
-        level = LEVEL_SUBSUBOPTIMUN;
+        level = LEVEL_SUBOPTIMUN;
       }
 
       // firefox show diffently from chrome when
@@ -222,7 +222,7 @@
 
     meter.innerHTML = METER_SHADOW_HTML;
     meter.setAttribute('_polyfill', '');
-    fixValue(meter);
+    fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE]);
     updateMeterStyle(meter);
     return meter;
   }
@@ -231,17 +231,17 @@
     switch (attr) {
       case PROP_MIN:
         meter.setAttribute(attr, value);
-        fixValue(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
+        fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
         break;
       case PROP_MAX:
         value = Math.max(value, meter[PROP_MAX]);
         meter.setAttribute(attr, value);
-        fixValue(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
+        fixProps(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
         break;
       case PROP_LOW:
         value = Math.min(Math.max(value, meter[PROP_MAX]), meter[PROP_MAX]);
         meter.setAttribute(attr, value);
-        fixValue(meter, [PROP_HIGH]);
+        fixProps(meter, [PROP_HIGH]);
         break;
       case PROP_HIGH:
         value = Math.min(Math.max(value, meter[PROP_MAX], meter[PROP_LOW]), meter[PROP_MAX]);
@@ -254,7 +254,7 @@
       default:
         meter.setAttribute(attr, value);
     }
-    updateMeterStyle(this);
+    updateMeterStyle(meter);
   }
 
   function pollyfillGetterSetter() {
@@ -279,13 +279,13 @@
           if (hasAttribute(this, prop)) {
             return +this.getAttribute(prop);
           } else if (prop === PROP_LOW) {
-            return this.min;
+            return this[PROP_MIN];
           } else if (prop === PROP_HIGH) {
-            return this.max;
+            return this[PROP_MAX];
           } else if (prop === PROP_OPTIMUN) {
-            return (this.max - this.min) / 2 + this.min;
+            return (this[PROP_MAX] - this[PROP_MIN]) / 2 + this[PROP_MIN];
           } else if (prop === PROP_VALUE) {
-            return this.min;
+            return this[PROP_MIN];
           }
           return METER_INITAL_VALUES[prop];
         } else {
@@ -307,14 +307,13 @@
   }
 
   function updateMeterStyle(meter) {
-    if (support.native || !isMeter(meter)) {
+    if (support.native) {
       return;
     }
 
     var innerDivs = meter.getElementsByTagName('div');
     if (!innerDivs.length) {
-      createShadow(meter);
-      return updateMeterStyle(meter);
+      return createShadow(meter);
     }
     var valueElement = innerDivs[2];
 
@@ -331,12 +330,14 @@
 
     // ie8 return no fixed props
     if (support.syncAttribute) {
-      props = fixValue(props);
+      props = fixProps(props);
     }
 
     var level = calcLevel(props);
     valueElement.className = METER_VALUE_CLASSES[level.level];
     valueElement.style.width = level.percentage + '%';
+
+    return meter;
   }
 
   function observer() {
@@ -365,7 +366,7 @@
 
   function polyfill(context) {
     if (support.native) {
-      // return;
+      return;
     }
 
     var meters = [];
@@ -378,7 +379,6 @@
     pollyfillGetterSetter();
     each(meters, function(meter) {
       createShadow(meter);
-      updateMeterStyle(meter);
     });
 
     observer();
@@ -395,13 +395,13 @@
     var isTop = false;
     try {
       isTop = window.frameElement === null;
-    } catch (_) {}
+    } catch (e) {}
 
     if (documentElement.doScroll && isTop && window.external) {
       (function doScroll() {
         try {
           documentElement.doScroll('left');
-        } catch (_) {
+        } catch (e) {
           window.setTimeout(doScroll, 50);
         }
         polyfill();
@@ -422,7 +422,7 @@
     LEVEL_OPTIMUN: LEVEL_OPTIMUN,
     LEVEL_SUBSUBOPTIMUN: LEVEL_SUBSUBOPTIMUN,
     polyfill: polyfill,
-    fix: fixValue,
+    fix: fixProps,
     calc: calcLevel
   };
 
