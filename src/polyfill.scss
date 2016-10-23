@@ -5,7 +5,6 @@ meter {
   height: 1em;
   width: 5em;
   vertical-align: -0.2em;
-  user-modify: read-only;
 }
 
 .meter-inner-element {
@@ -13,7 +12,6 @@ meter {
   box-sizing: inherit;
   height: 100%;
   width: 100%;
-  user-modify: read-only;
 }
 
 .meter-bar {

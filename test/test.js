@@ -16,7 +16,6 @@
           }
         }
       }
-
     }
   }
 
@@ -513,99 +512,11 @@
     });
   })();
 
-
-  var METER_INITAL_VALUES = {
-    min: 0,
-    max: 1,
-    low: 0,
-    high: 1,
-    value: 0,
-    optimum: 0.5
-  };
-  var meter = document.createElement('meter');
-  function show() {
-    var s = [];
-    'min,max,low,high,value,optinum'.split(',').forEach(function(key) {s.push(key +'='+ meter[key]);});
-    console.log(s.join(' ,'))
-  }
-
-  var METER_VALUE_CLASSES = {
-    inner: 'meter-inner-element',
-    bar: 'meter-bar',
-    optimum: 'meter-optimum-value',
-    suboptimum: 'meter-suboptimum-value',
-    subsuboptimum: 'meter-even-less-good-value'
-  };
-
-  function calcClass(value, low, high, min, max, optimum) {
-    // fix
-    if (max < min) {
-      max = min;
-    }
-    if (low < min) {
-      low = min;
-    }
-    if (high > max) {
-      high = max;
-    }
-    if (high < low) {
-      high = low;
-    }
-    if (value < min) {
-      value = min;
-    }
-    if (value > max) {
-      value = max;
-    }
-
-    if (optimum > max || optimum < min) {
-      optimum = min + (max - min) / 2;
-    }
-
-    var valueClass = METER_VALUE_CLASSES.optimum;
-    if (
-      high === max ||
-      low === min ||
-      (optimum >= low && optimum <= high)
-    ) {
-      if (
-        (low <= optimum && value < low) ||
-        (low > optimum && value > low) ||
-        (high < optimum && value < high) ||
-        (high >= optimum && value > high)
-      ){
-        valueClass = METER_VALUE_CLASSES.suboptimum;
-      }
-    } else if (low === high) {
-      if (
-        (low <= optimum && value < low) ||
-        (high > optimum && value > high)
-      ) {
-        valueClass = METER_VALUE_CLASSES.subsuboptimum;
-      }
-
-      // firefox show diffently from chrome when
-      // high > optimum && value === high
-    } else if (optimum < low) {
-      if (value > low && value <= high) {
-        valueClass = METER_VALUE_CLASSES.suboptimum;
-      } else if (value > high) {
-        valueClass = METER_VALUE_CLASSES.subsuboptimum;
-      }
-    } else if (optimum > high) {
-      if (value >= low && value < high) {
-        valueClass = METER_VALUE_CLASSES.suboptimum;
-      } else if (value < low) {
-        valueClass = METER_VALUE_CLASSES.subsuboptimum;
-      }
-
-      // firefox show diffently from chrome when
-      // value === high
-    }
-
-    return valueClass;
-  }
-
+  var METER_INITAL_VALUES = meterPolyfill.INITAL_VALUES;
+  var METER_VALUE_CLASSES = meterPolyfill.CLASSES;
+  var LEVEL_SUBOPTIMUN = meterPolyfill.LEVEL_SUBOPTIMUN;
+  var LEVEL_OPTIMUN = meterPolyfill.LEVEL_OPTIMUN;
+  var LEVEL_SUBSUBOPTIMUN = meterPolyfill.LEVEL_SUBSUBOPTIMUN;
 
   // render
   function render() {
@@ -626,19 +537,20 @@
         var params = props.join(' ');
         var meterId = 'meter-' + mkId();
 
-        var value = 'value' in test ? test.value : METER_INITAL_VALUES.value;
-        var max = 'max' in test ? test.max : METER_INITAL_VALUES.max;
-        var min = 'min' in test ? test.min : METER_INITAL_VALUES.min;
-        var low = 'low' in test ? test.low : METER_INITAL_VALUES.low;
-        var high = 'high' in test ? test.high : METER_INITAL_VALUES.high;
-        var optimum = 'optimum' in test ? test.optimum : METER_INITAL_VALUES.optimum;
-        var valueClass = calcClass(value, low, high, min, max, optimum);
+        var values = assign({
+          min: METER_INITAL_VALUES.min,
+          max: METER_INITAL_VALUES.max,
+          low: METER_INITAL_VALUES.low,
+          high: METER_INITAL_VALUES.high
+        }, test);
+        values = meterPolyfill.fix(values);
+        var level = meterPolyfill.calc(values).level;
 
         casesHTML.push([
           '<dt>' + params + '</dt>',
           '<dd>',
             '<meter id="' + meterId + '"' + attrs + '></meter>',
-            '<div class="color">color: <span class="' + valueClass + '"></span></div>',
+            '<div class="color">color: <span class="' + METER_VALUE_CLASSES[level] + '"></span></div>',
           '</dd>'
         ].join(''));
       });

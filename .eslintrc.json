@@ -34,7 +34,7 @@
     "no-extra-boolean-cast": 1,
 
     //
-    "no-extra-parens": 1,
+    "no-extra-parens": 0,
 
     // warn extra-semi
     "no-extra-semi": 1,
@@ -90,7 +90,7 @@
     "no-div-regex": 2,
 
     // warn return before else
-    "no-else-return": 1,
+    "no-else-return": 0,
 
     // warn empty functions
     "no-empty-function": 1,
@@ -184,7 +184,7 @@
     "no-proto": 2,
 
     // Disallow Assignment in return Statement
-    "no-return-assign": 2,
+    "no-return-assign": 0,
 
     // Disallow Script URLs
     "no-script-url": 2,
