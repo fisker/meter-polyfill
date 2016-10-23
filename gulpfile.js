@@ -9,6 +9,8 @@ var uglify = require('gulp-uglify');
 var cleanCSS = require('gulp-clean-css');
 var rename = require('gulp-rename');
 var browserSync = require('browser-sync');
+var uglifyjs = require('uglify-js');
+var minifier = require('gulp-uglify/minifier');
 
 var pkg = require('./package.json');
 var banner = ['/**',
@@ -16,10 +18,9 @@ var banner = ['/**',
   ' * @version v<%= pkg.version %>',
   ' * @license <%= pkg.license %>',
   ' * @copyright <%= pkg.author %>',
-  ' * @link https://github.com/fisker/meter-polyfill',
+  ' * @link <%= pkg.homepage %>',
   ' */',
   ''].join('\n');
-var $ = require('gulp-load-plugins')();
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 6',
@@ -33,11 +34,17 @@ var AUTOPREFIXER_BROWSERS = [
   'bb >= 1'
 ];
 
+var uglifyjsOpts = {
+  unused: true,
+  screw_ie8: false
+};
+
 gulp.task('scripts', function() {
   return gulp.src('src/polyfill.js')
     .pipe(rename(pkg.name+'.js'))
     .pipe(sourcemaps.init())
-    .pipe(uglify())
+    .pipe(uglify(uglifyjsOpts))// buggy
+    // .pipe(minifier(uglifyjsOpts, uglifyjs))
     .pipe(header(banner, {pkg}))
     .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('dist'))

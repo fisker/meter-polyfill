@@ -51,6 +51,8 @@ dd {
 .color,
 .result {
   display: inline-block;
+  *display: inline;
+  *zoom: 1;
   vertical-align: -.2em;
   margin-left: 15px;
 }

@@ -42,6 +42,10 @@
   var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
   var isGetterSetterPolyfilled = false;
   var isObservered = false;
+  var isReady = false;
+  // TODO
+  // use getComputedStyle find the right calculator
+  var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
   var meterElement = document.createElement(METER_TAGNAME);
   meterElement.low = '1';
@@ -64,7 +68,6 @@
     high: 1
   };
 
-
   var METER_SHADOW_HTML = [
     '<div class="' + METER_VALUE_CLASSES.inner + '">',
       '<div class="' + METER_VALUE_CLASSES.bar + '">',
@@ -74,6 +77,10 @@
     '</div>'
   ].join('');
 
+  var min = Math.min;
+  var max = Math.max;
+  var setTimeout = window.setTimeout;
+
   // help functions
   function each(arrLike, fn) {
     for (var i = 0, len = arrLike.length; i < len; i++) {
@@ -82,7 +89,6 @@
   }
 
   function on(el, events, listener, useCapture) {
-    var agrs = arguments;
     each(events.split(' '), function(event) {
       if (support.addEventListener) {
         el.addEventListener(event, listener, useCapture);
@@ -128,14 +134,18 @@
           }
           break;
         case PROP_VALUE:
-          if (
-            (meter[PROP_VALUE] < meter[PROP_MIN]) ||
-            (typeof meter[PROP_VALUE] === 'undefined')
-          ) {
-            meter[PROP_VALUE] = meter[PROP_MIN];
-          }
-          if (meter[PROP_VALUE] > meter[PROP_MAX]) {
-            meter[PROP_VALUE] = meter[PROP_MAX];
+          if (isMeter(meter) && typeof meter[PROP_VALUE] === 'undefined') {
+            meter.removeAttribute(PROP_VALUE);
+          } else {
+            if (
+              (meter[PROP_VALUE] < meter[PROP_MIN]) ||
+              (typeof meter[PROP_VALUE] === 'undefined')
+            ) {
+              meter[PROP_VALUE] = meter[PROP_MIN];
+            }
+            if (meter[PROP_VALUE] > meter[PROP_MAX]) {
+              meter[PROP_VALUE] = meter[PROP_MAX];
+            }
           }
           break;
         case PROP_OPTIMUN:
@@ -186,11 +196,8 @@
         (low <= optimum && value < low) ||
         (high > optimum && value > high)
       ) {
-        level = LEVEL_SUBOPTIMUN;
+        level = LEVEL_SUBSUBOPTIMUN;
       }
-
-      // firefox show diffently from chrome when
-      // value === high
     } else if (optimum < low) {
       if (value > low && value <= high) {
         level = LEVEL_SUBOPTIMUN;
@@ -203,9 +210,18 @@
       } else if (value < low) {
         level = LEVEL_SUBSUBOPTIMUN;
       }
+    }
 
-      // firefox show diffently from chrome when
-      // value === high
+    // firefox show diffently from chrome when
+    // value === high
+
+    if (isFirefox &&
+      (
+        (optimum > high && value === high) ||
+        (optimum < low && value === low)
+      )
+     ) {
+      level = LEVEL_SUBOPTIMUN;
     }
 
 
@@ -222,6 +238,13 @@
 
     meter.innerHTML = METER_SHADOW_HTML;
     meter.setAttribute('_polyfill', '');
+    // must has a min/max value
+    each([PROP_MIN, PROP_MAX], function(prop) {
+      if (typeof meter[prop] === 'undefined') {
+        meter[prop] = METER_INITAL_VALUES[prop];
+      }
+    });
+
     fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE]);
     updateMeterStyle(meter);
     return meter;
@@ -234,21 +257,21 @@
         fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
         break;
       case PROP_MAX:
-        value = Math.max(value, meter[PROP_MAX]);
+        value = max(value, meter[PROP_MAX]);
         meter.setAttribute(attr, value);
         fixProps(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
         break;
       case PROP_LOW:
-        value = Math.min(Math.max(value, meter[PROP_MAX]), meter[PROP_MAX]);
+        value = min(max(value, meter[PROP_MIN]), meter[PROP_MAX]);
         meter.setAttribute(attr, value);
         fixProps(meter, [PROP_HIGH]);
         break;
       case PROP_HIGH:
-        value = Math.min(Math.max(value, meter[PROP_MAX], meter[PROP_LOW]), meter[PROP_MAX]);
+        value = min(max(value, meter[PROP_MIN], meter[PROP_LOW]), meter[PROP_MAX]);
         meter.setAttribute(attr, value);
         break;
       case PROP_OPTIMUN:
-        value = Math.min(Math.max(value, meter[PROP_MAX]), meter[PROP_MAX]);
+        value = min(max(value, meter[PROP_MIN]), meter[PROP_MAX]);
         meter.setAttribute(attr, value);
         break;
       default:
@@ -322,8 +345,13 @@
       if (support.unknownElement) {
         props[prop] = +meter[prop];
       } else if (hasAttribute(meter, prop)) {
-        props[prop] = +meter.getAttribute(prop);
-      } else {
+        var value = +meter.getAttribute(prop);
+        if (isNaN(value)) {
+          props[prop] = METER_INITAL_VALUES[prop];
+        } else {
+          props[prop] = value;
+        }
+      }else {
         props[prop] = METER_INITAL_VALUES[prop];
       }
     });
@@ -332,7 +360,6 @@
     if (support.syncAttribute) {
       props = fixProps(props);
     }
-
     var level = calcLevel(props);
     valueElement.className = METER_VALUE_CLASSES[level.level];
     valueElement.style.width = level.percentage + '%';
@@ -384,36 +411,45 @@
     observer();
   }
 
-  function autoPolyfill() {
+  (function checkReady() {
     if (document.readyState === 'complete') {
-      polyfill();
+      isReady = true;
     }
+
     on(document, 'DOMContentLoaded', function() {
-      polyfill();
+      isReady = true;
     });
 
+    on(window, 'load', function() {
+      isReady = true;
+    });
+
+    // uglify will break window without a wrapper
     var isTop = false;
     try {
-      isTop = window.frameElement === null;
-    } catch (e) {}
+      isTop === window.frameElement === null;
+    } catch (_) {}
 
-    if (documentElement.doScroll && isTop && window.external) {
+
+    if (!support.addEventListener && documentElement.doScroll && isTop) {
       (function doScroll() {
         try {
           documentElement.doScroll('left');
-        } catch (e) {
-          window.setTimeout(doScroll, 50);
+        } catch (_) {
+          return setTimeout(doScroll, 50);
         }
-        polyfill();
+        isReady = true;
       })();
     }
+  })();
 
-    on(window, 'load', function() {
+  (function autoPolyfill() {
+    if (!isReady) {
+      setTimeout(autoPolyfill, 50);
+    } else {
       polyfill();
-    });
-  }
-
-  autoPolyfill();
+    }
+  })();
 
   return {
     CLASSES: METER_VALUE_CLASSES,

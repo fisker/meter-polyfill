@@ -42,6 +42,20 @@
     return Math.floor(now + now * Math.random()).toString(16).slice(-8);
   }
 
+  if (!window.getComputedStyle) {
+    getComputedStyle = function(el) {
+      return el.currentStyle;
+    }
+  }
+
+  function hasAttribute(el, name) {
+    if (el.hasAttribute) {
+      return el.hasAttribute(name);
+    } else {
+      return el.getAttribute(name) !== null;
+    }
+  }
+
 
   var testCase = [];
 
@@ -518,6 +532,7 @@
   var LEVEL_OPTIMUN = meterPolyfill.LEVEL_OPTIMUN;
   var LEVEL_SUBSUBOPTIMUN = meterPolyfill.LEVEL_SUBSUBOPTIMUN;
 
+
   // render
   function render() {
     var nav = [];
@@ -578,7 +593,7 @@
   function testResult() {
     var testMeter = document.createElement('meter');
     testMeter.value = .5;
-    var isFirfoxMeter = getComputedStyle(testMeter, '::-moz-meter-bar').width === '50%';
+    var isFirfoxMeter = (testMeter, '::-moz-meter-bar').width === '50%';
 
     var meters = document.getElementsByTagName('meter');
     var failedCounter = 0;
@@ -591,6 +606,7 @@
       var percentageSpan = meter.nextSibling.nextSibling.getElementsByTagName('span')[0];
 
 
+
       var resultColorLevel = (function() {
         var className = colorSpan.className;
         var resultColorLevel;
@@ -600,37 +616,37 @@
             return true;
           }
         });
-        return resultColorLevel;
+        return +resultColorLevel;
       })();
-
       var resultPercent = + percentageSpan.innerHTML;
 
       var meterColorLevel = (function() {
         // if (isFirfoxMeter) {
           try {
             var firefoxBg = getComputedStyle(meter, '::-moz-meter-bar').backgroundImage;
-            if(firefoxMeterbarColor.indexOf('rgb(170, 221, 119)') > -1 ){
+            if(firefoxBg.indexOf('rgb(170, 221, 119)') > -1 ){
               return LEVEL_OPTIMUN;
-            } else if(firefoxMeterbarColor.indexOf('rgb(255, 238, 119)') > -1 ){
+            } else if(firefoxBg.indexOf('rgb(255, 238, 119)') > -1 ){
               return LEVEL_SUBOPTIMUN;
-            } else if(firefoxMeterbarColor.indexOf('rgb(255, 119, 119)') > -1 ){
+            } else if(firefoxBg.indexOf('rgb(255, 119, 119)') > -1 ){
               return LEVEL_SUBSUBOPTIMUN;
             }
           } catch(_) {}
         // } else {
           try {
-            var resultColorLevel;
+            var colorLevel;
             var pollyfillColor = meter.getElementsByTagName('div')[2].className;
             each(METER_VALUE_CLASSES, function(style, key) {
               if (style === pollyfillColor){
-                resultColorLevel = key;
+                colorLevel = key;
                 return true;
               }
             });
-            return resultColorLevel;
+            return +colorLevel;
           } catch(_) {}
         // }
       })();
+
 
       var meterPercent = (function() {
         // if (isFirfoxMeter) {
@@ -678,7 +694,7 @@
 
   function isPolyfilledMeter(meter) {
     if (!supportMeter) {
-      return meter.max === 1 && meter.hasAttribute('_polyfill');
+      return meter.max === 1 && hasAttribute(meter, '_polyfill');
     } else {
       return meter.max === 1;
     }
@@ -759,7 +775,7 @@
       var meters = document.getElementsByTagName('meter');
       var done = true;
       each(meters, function(meter) {
-        if ((typeof meter.max === 'undefined') || (!supportMeter && !meter.hasAttribute('_polyfill'))) {
+        if ((typeof meter.max === 'undefined') || (!supportMeter && !hasAttribute(meter,'_polyfill'))) {
           window.setTimeout(check, 500);
           done = false;
           return true;
