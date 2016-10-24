@@ -99,6 +99,32 @@
     });
   }
 
+  if (!Function.prototype.bind) {
+    Function.prototype.bind = function(self) {
+      var fn = this;
+      return function() {
+        return fn.apply(self, arguments);
+      }
+    }
+  }
+
+  function createNativeFunction(fnName, fn) {
+    function toString() {
+      return 'function ' + fnName + '() { [native code] }';
+    };
+
+    var nativeToString = toString.toString.toString;
+
+    // firfox shows bound toString in console not bug
+    // ie7/8 is buggy without bind
+    toString.toString = nativeToString.bind(nativeToString);
+    // some browsers shows empty function name in toString.toString.toString
+    toString.toString.toString = toString.toString;
+
+    fn.toString = toString;
+    return fn;
+  }
+
   function hasAttribute(el, name) {
     if (support.hasAttribute) {
       return el.hasAttribute(name);
@@ -297,7 +323,7 @@
       if (support.unknownElement) {
         props[prop] = +meter[prop];
       } else if (hasAttribute(meter, prop)) {
-        var value = +meter.getAttribute(prop);
+        props[prop] = +meter.getAttribute(prop);
       }else {
         props[prop] = METER_INITAL_VALUES[prop];
       }
@@ -398,15 +424,26 @@
     });
   })();
 
-  (function overwriteCreateElement() {
+  (function polyfillDocument() {
     var createElement = document.createElement;
-    document.createElement = function() {
+
+    function HTMLMeterElement() {
       var el = createElement.apply(document, arguments);
-      if (isMeter(el)) {
-        polyfill(el);
-      }
-      return el;
+      return polyfill(el);
     }
+    HTMLMeterElement.constructor = HTMLMeterElement;
+    HTMLMeterElement.prototype = meterElement.constructor.prototype;
+    window.HTMLMeterElement = createNativeFunction('HTMLMeterElement', HTMLMeterElement);
+
+    function documentCreateElemennt(tag) {
+      if (tag.toUpperCase() === METER_TAG) {
+        return HTMLMeterElement.call(document, arguments);
+      } else {
+        return createElement.apply(document, arguments);
+      }
+    }
+    documentCreateElemennt.toString = nativeToString('createElement');
+    document.createElement = createNativeFunction('createElement', documentCreateElemennt);
   })();
 
   (function checkReady() {

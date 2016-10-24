@@ -37,7 +37,7 @@ var AUTOPREFIXER_BROWSERS = [
 var uglifyjsOpts = {
   compress: {
     screw_ie8: false,
-    support_ie8
+    support_ie8: true
   }
 };
 
