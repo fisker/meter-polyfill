@@ -1,25 +1,27 @@
 body {
   margin: 0;
-  margin-left: 200px; }
+  margin-left: 200px;
+}
 
 fakemeter {
   -moz-appearance: meterbar;
   -webkit-appearance: meter;
-  -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
+  box-sizing: border-box;
   display: inline-block;
   height: 1em;
   width: 5em;
   vertical-align: -0.2em;
-  -moz-user-select: none; }
+  -moz-user-select: none;
+}
 
 button {
-  cursor: pointer; }
+  cursor: pointer;
+}
 
 .container {
   position: relative;
-  padding: 10px; }
+  padding: 10px;
+}
 
 .nav {
   position: fixed;
@@ -27,7 +29,8 @@ button {
   bottom: 0;
   left: 0;
   width: 200px;
-  overflow: auto; }
+  overflow: auto;
+}
 
 .nav a {
   display: block;
@@ -35,21 +38,25 @@ button {
   border-bottom: 1px solid #ddd;
   text-decoration: none;
   color: #fff;
-  background: darkseagreen; }
+  background: darkseagreen;
+}
 
 .nav a:hover {
-  background: #ddd; }
+  background: #ddd;
+}
 
 dt {
-  padding: 10px;
+  padding:  10px;
   border: 1px solid darkseagreen;
-  border-bottom: 0; }
+  border-bottom:  0;
+}
 
 dd {
   border: 1px solid darkseagreen;
-  padding: 10px;
+  padding:  10px;
   margin: 0 0 10px;
-  border-top: 0; }
+  border-top:  0;
+}
 
 .percentage,
 .color,
@@ -58,18 +65,21 @@ dd {
   *display: inline;
   *zoom: 1;
   vertical-align: -.2em;
-  margin-left: 15px; }
+  margin-left: 15px;
+}
 
 .color span {
   padding: 0 5px;
   height: 1em;
   width: 2em;
-  display: inline-block; }
+  display: inline-block;
+}
 
 .desc {
   border: 1px solid red;
   background: lightyellow;
-  padding: 15px; }
+  padding: 15px;
+}
 
 .hide-passed {
   position: fixed;
@@ -78,6 +88,5 @@ dd {
   background: #eee;
   border: 1px solid #ddd;
   padding: 15px;
-  z-index: 1; }
-
-/*# sourceMappingURL=test.css.map */
+  z-index: 1;
+}

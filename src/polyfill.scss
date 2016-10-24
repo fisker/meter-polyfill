@@ -3,6 +3,8 @@ meter {
   -webkit-appearance: meter;
   box-sizing: border-box;
   display: inline-block;
+  *display: inline;
+  *zoom: 1;
   height: 1em;
   width: 5em;
   vertical-align: -0.2em;
