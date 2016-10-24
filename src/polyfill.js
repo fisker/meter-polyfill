@@ -2,10 +2,7 @@
 (function(root, factory) {
   'use strict';
   if (typeof define === 'function' && define.amd) {
-    // AMD. Register as an anonymous module.
-    define([], function() {
-      return factory(root);
-    });
+    define(factory(root));
   } else if (typeof module === 'object' && module.exports) {
     module.exports = factory(root);
   } else {
@@ -413,7 +410,7 @@
     return meter;
   }
 
-  function observer() {
+  function observerSubtree() {
     if (supports.native || isObservered) {
       return;
     }
@@ -532,9 +529,13 @@
   })();
 
   (function checkReady() {
-    if (document.readyState === 'complete') {
-      isReady = true;
+
+    function completed() {
+      if (document.readyState === 'complete') {
+        isReady = true;
+      }
     }
+    completed();
 
     on(document, 'DOMContentLoaded', function() {
       isReady = true;
@@ -543,6 +544,8 @@
     on(window, 'load', function() {
       isReady = true;
     });
+
+    on.document('readystatechange', completed);
 
     // uglify will break window without a wrapper
     var isTop = false;
@@ -553,7 +556,7 @@
     if (!supports.addEventListener && documentElement.doScroll && isTop) {
       (function doScroll() {
         try {
-          documentElement.doScroll('left');
+          documentElement.doScroll();
         } catch (_) {
           return setTimeout(doScroll, 50);
         }
@@ -565,7 +568,7 @@
   (function autoPolyfill() {
     if (isReady) {
       polyfill();
-      observer();
+      observerSubtree();
     } else {
       setTimeout(autoPolyfill, 50);
     }
