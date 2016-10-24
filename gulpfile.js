@@ -35,8 +35,10 @@ var AUTOPREFIXER_BROWSERS = [
 ];
 
 var uglifyjsOpts = {
-  unused: true,
-  screw_ie8: false
+  compress: {
+    screw_ie8: false,
+    support_ie8
+  }
 };
 
 gulp.task('scripts', function() {

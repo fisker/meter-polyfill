@@ -14,9 +14,9 @@
 })(this, function(window) {
   'use strict';
 
-  var LEVEL_SUBOPTIMUN = 0;
-  var LEVEL_OPTIMUN = 1;
-  var LEVEL_SUBSUBOPTIMUN = 2;
+  var LEVEL_SUBOPTIMUN = 1;
+  var LEVEL_OPTIMUN = 2;
+  var LEVEL_SUBSUBOPTIMUN = 3;
   var PROP_MIN = 'min';
   var PROP_MAX = 'max';
   var PROP_LOW = 'low';
@@ -24,7 +24,7 @@
   var PROP_VALUE = 'value';
   var PROP_OPTIMUN = 'optimum';
   var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN];
-  var METER_TAGNAME = 'METER';
+  var METER_TAG = 'METER';
   var METER_CLASS_PREFIX = 'meter-';
 
   var METER_VALUE_CLASSES = {
@@ -40,15 +40,14 @@
   var documentElement = document.documentElement;
   // there is no moz/ms/o vendor prefix
   var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-  var isGetterSetterPolyfilled = false;
   var isObservered = false;
   var isReady = false;
-  // TODO
+  // TODO:
   // use getComputedStyle find the right calculator
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
-  var meterElement = document.createElement(METER_TAGNAME);
-  meterElement.low = '1';
+  var meterElement = document.createElement(METER_TAG);
+  meterElement[PROP_MIN] = '1';
   meterElement.setAttribute(PROP_HIGH, '1');
 
   var support = {
@@ -77,8 +76,8 @@
     '</div>'
   ].join('');
 
-  var min = Math.min;
-  var max = Math.max;
+  var min = Math[PROP_MIN];
+  var max = Math[PROP_MAX];
   var setTimeout = window.setTimeout;
 
   // help functions
@@ -109,10 +108,17 @@
   }
 
   function isMeter(el) {
-    return el && el.tagName && el.tagName.toUpperCase() === METER_TAGNAME;
+    return el && el.tagName && el.tagName.toUpperCase() === METER_TAG;
   }
 
   function fixProps(meter, props) {
+    // must has a min/max value
+    each([PROP_MIN, PROP_MAX], function(prop) {
+      var value = +meter[prop];
+      if (isNaN(value)) {
+        meter[prop] = METER_INITAL_VALUES[prop];
+      }
+    });
     each(props || METER_PROPS, function(prop) {
       switch (prop) {
         case PROP_MAX:
@@ -168,6 +174,8 @@
   }
 
   function calcLevel(props) {
+    props = fixProps(props);
+
     var min = props[PROP_MIN];
     var max = props[PROP_MAX];
     var low = props[PROP_LOW];
@@ -213,8 +221,7 @@
     }
 
     // firefox show diffently from chrome when
-    // value === high
-
+    // value === high/low
     if (isFirefox &&
       (
         (optimum > high && value === high) ||
@@ -224,10 +231,10 @@
       level = LEVEL_SUBOPTIMUN;
     }
 
-
     return {
       percentage: percentage,
-      level: level
+      level: level,
+      style: METER_VALUE_CLASSES[level]
     };
   }
 
@@ -238,12 +245,6 @@
 
     meter.innerHTML = METER_SHADOW_HTML;
     meter.setAttribute('_polyfill', '');
-    // must has a min/max value
-    each([PROP_MIN, PROP_MAX], function(prop) {
-      if (typeof meter[prop] === 'undefined') {
-        meter[prop] = METER_INITAL_VALUES[prop];
-      }
-    });
 
     fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE]);
     updateMeterStyle(meter);
@@ -280,62 +281,13 @@
     updateMeterStyle(meter);
   }
 
-  function pollyfillGetterSetter() {
-    if (isGetterSetterPolyfilled || !support.unknownElement) {
-      return;
-    }
-
-    var prototype = meterElement.constructor.prototype;
-    function getSetter(prop) {
-      return function(value) {
-        if (isMeter(this)) {
-          setMeterAttribute(this, prop.toLowerCase(), +value);
-        } else {
-          return this[prop] = value;
-        }
-      };
-    }
-
-    function getGetter(prop) {
-      return function() {
-        if (isMeter(this)) {
-          if (hasAttribute(this, prop)) {
-            return +this.getAttribute(prop);
-          } else if (prop === PROP_LOW) {
-            return this[PROP_MIN];
-          } else if (prop === PROP_HIGH) {
-            return this[PROP_MAX];
-          } else if (prop === PROP_OPTIMUN) {
-            return (this[PROP_MAX] - this[PROP_MIN]) / 2 + this[PROP_MIN];
-          } else if (prop === PROP_VALUE) {
-            return this[PROP_MIN];
-          }
-          return METER_INITAL_VALUES[prop];
-        } else {
-          return this[prop];
-        }
-      };
-    }
-
-    each(METER_PROPS, function(prop) {
-      var props = {};
-      if (!support.syncAttribute) {
-        props.set = getSetter(prop);
-      }
-      props.get = getGetter(prop);
-      Object.defineProperty(prototype, prop, props);
-    });
-
-    isGetterSetterPolyfilled = true;
-  }
-
   function updateMeterStyle(meter) {
     if (support.native) {
       return;
     }
 
     var innerDivs = meter.getElementsByTagName('div');
-    if (!innerDivs.length) {
+    if (!innerDivs.length || !innerDivs[2]) {
       return createShadow(meter);
     }
     var valueElement = innerDivs[2];
@@ -346,20 +298,11 @@
         props[prop] = +meter[prop];
       } else if (hasAttribute(meter, prop)) {
         var value = +meter.getAttribute(prop);
-        if (isNaN(value)) {
-          props[prop] = METER_INITAL_VALUES[prop];
-        } else {
-          props[prop] = value;
-        }
       }else {
         props[prop] = METER_INITAL_VALUES[prop];
       }
     });
 
-    // ie8 return no fixed props
-    if (support.syncAttribute) {
-      props = fixProps(props);
-    }
     var level = calcLevel(props);
     valueElement.className = METER_VALUE_CLASSES[level.level];
     valueElement.style.width = level.percentage + '%';
@@ -403,13 +346,68 @@
       meters = (context || documentElement).getElementsByTagName('meter');
     }
 
-    pollyfillGetterSetter();
     each(meters, function(meter) {
-      createShadow(meter);
+      updateMeterStyle(meter);
     });
-
-    observer();
   }
+
+  (function pollyfillGetterSetter() {
+    if (!support.unknownElement) {
+      return;
+    }
+
+    var prototype = meterElement.constructor.prototype;
+    function getSetter(prop) {
+      return function(value) {
+        if (isMeter(this)) {
+          setMeterAttribute(this, prop.toLowerCase(), +value);
+        } else {
+          return this[prop] = value;
+        }
+      };
+    }
+
+    (function getGetter(prop) {
+      return function() {
+        if (isMeter(this)) {
+          if (hasAttribute(this, prop)) {
+            return +this.getAttribute(prop);
+          } else if (prop === PROP_LOW) {
+            return this[PROP_MIN];
+          } else if (prop === PROP_HIGH) {
+            return this[PROP_MAX];
+          } else if (prop === PROP_OPTIMUN) {
+            return (this[PROP_MAX] - this[PROP_MIN]) / 2 + this[PROP_MIN];
+          } else if (prop === PROP_VALUE) {
+            return this[PROP_MIN];
+          }
+          return METER_INITAL_VALUES[prop];
+        } else {
+          return this[prop];
+        }
+      };
+    }
+
+    each(METER_PROPS, function(prop) {
+      var props = {};
+      if (!support.syncAttribute) {
+        props.set = getSetter(prop);
+      }
+      props.get = getGetter(prop);
+      Object.defineProperty(prototype, prop, props);
+    });
+  })();
+
+  (function overwriteCreateElement() {
+    var createElement = document.createElement;
+    document.createElement = function() {
+      var el = createElement.apply(document, arguments);
+      if (isMeter(el)) {
+        polyfill(el);
+      }
+      return el;
+    }
+  })();
 
   (function checkReady() {
     if (document.readyState === 'complete') {
@@ -430,7 +428,6 @@
       isTop === window.frameElement === null;
     } catch (_) {}
 
-
     if (!support.addEventListener && documentElement.doScroll && isTop) {
       (function doScroll() {
         try {
@@ -448,6 +445,7 @@
       setTimeout(autoPolyfill, 50);
     } else {
       polyfill();
+      observer();
     }
   })();
 
