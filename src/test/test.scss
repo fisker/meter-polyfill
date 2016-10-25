@@ -14,6 +14,10 @@ body {
   font-family: sans-serif;
 }
 
+meter {
+  vertical-align: baseline;
+}
+
 <%= METER_TAG %> {
   box-sizing: border-box;
   display: inline-block;
@@ -21,9 +25,9 @@ body {
   *zoom: 1;
   height: 1em;
   width: 5em;
-  vertical-align: -0.2em;
   user-select: none;
   border: 1px solid lightyellow;
+  vertical-align: baseline;
 }
 
 table {

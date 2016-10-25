@@ -15,6 +15,9 @@ html {
 body {
   font-family: sans-serif; }
 
+meter {
+  vertical-align: baseline; }
+
 FAKEMETER {
   -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;
@@ -24,12 +27,12 @@ FAKEMETER {
   *zoom: 1;
   height: 1em;
   width: 5em;
-  vertical-align: -0.2em;
   -webkit-user-select: none;
      -moz-user-select: none;
       -ms-user-select: none;
           user-select: none;
-  border: 1px solid lightyellow; }
+  border: 1px solid lightyellow;
+  vertical-align: baseline; }
 
 table {
   border-collapse: collapse;
