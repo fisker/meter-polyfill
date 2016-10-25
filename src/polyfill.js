@@ -28,7 +28,7 @@
     METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
         return $1.toUpperCase() + $2.toLowerCase()
     }),
-    'Element'].join();
+    'Element'].join('');
   var DOCUMENT_CREAMENT_METHOD = 'createElement';
 
   var METER_VALUE_CLASSES = {
@@ -74,18 +74,28 @@
   var meterElement = createElement(METER_TAG);
 
   var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
+
     function HTMLMeterElement() {
       throw new TypeError('Illegal constructor');
     }
-    HTMLMeterElement.constructor = HTMLMeterElement;
-     // ie 8 constructor is null
-    HTMLMeterElement.prototype = (
+
+    // ie 8 constructor is null
+    var prototype = (
       window.HTMLElement ||
       meterElement.constructor ||
       window.Element ||
       window.Node ||
       function() {}).prototype;
-    return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, HTMLMeterElement);
+
+    if (Object.create) {
+      prototype = Object.create(prototype);
+    }
+
+    HTMLMeterElement.prototype = prototype;
+
+    var nativeFn = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, HTMLMeterElement);
+    nativeFn.constructor = nativeFn.prototype.constructor = nativeFn;
+    return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = nativeFn;
   })();
 
   // there is no moz/ms/o vendor prefix
