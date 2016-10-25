@@ -15,7 +15,7 @@ body {
 }
 
 meter {
-  vertical-align: baseline;
+  vertical-align: center;
 }
 
 <%= METER_TAG %> {
@@ -27,7 +27,7 @@ meter {
   width: 5em;
   user-select: none;
   border: 1px solid lightyellow;
-  vertical-align: baseline;
+  vertical-align: center;
 }
 
 table {
@@ -121,6 +121,7 @@ only screen and (max-width: 760px),
   display: inline-block;
   *display: inline;
   *zoom: 1;
+  appearance: none;
 }
 
 .percentage-indicator {
@@ -156,79 +157,79 @@ only screen and (max-width: 760px),
 }
 
 
-button {
-  cursor: pointer;
-}
+// button {
+//   cursor: pointer;
+// }
 
-.container {
-  position: relative;
-  padding: 10px;
-}
+// .container {
+//   position: relative;
+//   padding: 10px;
+// }
 
-.nav {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 200px;
-  overflow: auto;
-}
+// .nav {
+//   position: fixed;
+//   top: 0;
+//   bottom: 0;
+//   left: 0;
+//   width: 200px;
+//   overflow: auto;
+// }
 
-.nav a {
-  display: block;
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  text-decoration: none;
-  color: #fff;
-  background: darkseagreen;
-}
+// .nav a {
+//   display: block;
+//   padding: 10px;
+//   border-bottom: 1px solid #ddd;
+//   text-decoration: none;
+//   color: #fff;
+//   background: darkseagreen;
+// }
 
-.nav a:hover {
-  background: #ddd;
-}
+// .nav a:hover {
+//   background: #ddd;
+// }
 
-dt {
-  padding:  10px;
-  border: 1px solid darkseagreen;
-  border-bottom:  0;
-}
+// dt {
+//   padding:  10px;
+//   border: 1px solid darkseagreen;
+//   border-bottom:  0;
+// }
 
-dd {
-  border: 1px solid darkseagreen;
-  padding:  10px;
-  margin: 0 0 10px;
-  border-top:  0;
-}
+// dd {
+//   border: 1px solid darkseagreen;
+//   padding:  10px;
+//   margin: 0 0 10px;
+//   border-top:  0;
+// }
 
-.percentage,
-.color,
-.result {
-  display: inline-block;
-  *display: inline;
-  *zoom: 1;
-  vertical-align: -.2em;
-  margin-left: 15px;
-}
+// .percentage,
+// .color,
+// .result {
+//   display: inline-block;
+//   *display: inline;
+//   *zoom: 1;
+//   vertical-align: -.2em;
+//   margin-left: 15px;
+// }
 
-.color span {
-  padding: 0 5px;
-  height: 1em;
-  width: 2em;
-  display: inline-block;
-}
+// .color span {
+//   padding: 0 5px;
+//   height: 1em;
+//   width: 2em;
+//   display: inline-block;
+// }
 
-.desc {
-  border: 1px solid red;
-  background: lightyellow;
-  padding: 15px;
-}
+// .desc {
+//   border: 1px solid red;
+//   background: lightyellow;
+//   padding: 15px;
+// }
 
-.hide-passed {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  background: #eee;
-  border: 1px solid #ddd;
-  padding: 15px;
-  z-index: 1;
-}
+// .hide-passed {
+//   position: fixed;
+//   right: 0;
+//   bottom: 0;
+//   background: #eee;
+//   border: 1px solid #ddd;
+//   padding: 15px;
+//   z-index: 1;
+// }

@@ -312,7 +312,12 @@
     }
 
     // firefox show diffently from chrome when
-    // value === high/low
+    // value === high/low && min === max
+    if (isFirefox && min === max) {
+      percentage = 100;
+    }
+
+
     if (isFirefox &&
       (
         (optimum > high && value === high) ||

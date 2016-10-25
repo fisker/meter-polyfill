@@ -16,7 +16,7 @@ body {
   font-family: sans-serif; }
 
 meter {
-  vertical-align: baseline; }
+  vertical-align: center; }
 
 FAKEMETER {
   -webkit-box-sizing: border-box;
@@ -32,7 +32,7 @@ FAKEMETER {
       -ms-user-select: none;
           user-select: none;
   border: 1px solid lightyellow;
-  vertical-align: baseline; }
+  vertical-align: center; }
 
 table {
   border-collapse: collapse;
@@ -102,7 +102,10 @@ td {
   height: 1em;
   display: inline-block;
   *display: inline;
-  *zoom: 1; }
+  *zoom: 1;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none; }
 
 .percentage-indicator {
   border: 1px solid #ddd;
@@ -129,71 +132,5 @@ td {
 
 .result-unknow {
   color: gray; }
-
-button {
-  cursor: pointer; }
-
-.container {
-  position: relative;
-  padding: 10px; }
-
-.nav {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 200px;
-  overflow: auto; }
-
-.nav a {
-  display: block;
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  text-decoration: none;
-  color: #fff;
-  background: darkseagreen; }
-
-.nav a:hover {
-  background: #ddd; }
-
-dt {
-  padding: 10px;
-  border: 1px solid darkseagreen;
-  border-bottom: 0; }
-
-dd {
-  border: 1px solid darkseagreen;
-  padding: 10px;
-  margin: 0 0 10px;
-  border-top: 0; }
-
-.percentage,
-.color,
-.result {
-  display: inline-block;
-  *display: inline;
-  *zoom: 1;
-  vertical-align: -.2em;
-  margin-left: 15px; }
-
-.color span {
-  padding: 0 5px;
-  height: 1em;
-  width: 2em;
-  display: inline-block; }
-
-.desc {
-  border: 1px solid red;
-  background: lightyellow;
-  padding: 15px; }
-
-.hide-passed {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  background: #eee;
-  border: 1px solid #ddd;
-  padding: 15px;
-  z-index: 1; }
 
 /*# sourceMappingURL=test.css.map */
