@@ -12,6 +12,7 @@ var uglifyjs = require('uglify-js');
 var minifier = require('gulp-uglify/minifier');
 var server = require('gulp-server-livereload');
 var flatten = require('gulp-flatten');
+var replace = require('gulp-replace');
 
 var pkg = require('./package.json');
 var banner = ['/**',
@@ -25,6 +26,8 @@ var banner = ['/**',
 
 var year = new Date().getFullYear();
 var banner_min = '/* <%= pkg.name %> v<%= pkg.version %> | (c) ' + year + ' <%= pkg.author.name %> | <%= pkg.license %> License */\n';
+
+var polyfillMeterTag = 'FAKEMETER';
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 6',
@@ -49,7 +52,6 @@ var uglifyjsOpts = {
   }
 };
 
-
 gulp.task('scripts:min', function() {
   return gulp.src('src/polyfill.js')
     .pipe(rename(pkg.name + '.min.js'))
@@ -68,6 +70,7 @@ gulp.task('scripts:min', function() {
 
 gulp.task('scripts:release', function() {
   return gulp.src('src/polyfill.js')
+    .pipe(replace('<%= METER_TAG %>', 'METER'))
     .pipe(rename(pkg.name + '.js'))
     .pipe(header(banner, {pkg}))
     .pipe(gulp.dest('dist'))
@@ -118,6 +121,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
 gulp.task('test:scss', function() {
   return gulp.src('src/**/*.scss')
     .pipe(flatten())
+    .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(sass({
       precision: 10,
@@ -131,6 +135,7 @@ gulp.task('test:scss', function() {
 
 gulp.task('test:misc', function() {
   return gulp.src('src/**/*.{js,html}')
+    .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
     .pipe(flatten())
     .pipe(gulp.dest('test'))
     .pipe(size({title: 'script'}));

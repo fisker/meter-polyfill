@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>meter-polyfill</title>
+  <meta name="author" content="fisker Cheung">
+  <meta name="keywords" content="html5,meter,polyfill">
+  <meta name="description" content="Polyfill for meter element.">
+  <link rel="stylesheet" href="polyfill.css">
+  <link rel="stylesheet" href="test.css">
+  <!--[if IE 9]><script>document.create('FAKEMETER')</script><![endif]-->
+</head>
+<body>
+  <table class="test-result-list">
+    <caption>prototype test</caption>
+    <thead>
+      <tr>
+        <th>test</th>
+        <th>message</th>
+        <th>result</th>
+      </tr>
+    </thead>
+    <tbody id="js-test-prototype-container">
+    </tbody>
+  </table>
+
+  <table class="meter-list">
+    <caption>meters</caption>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>native meter</th>
+        <th>polyfill meter</th>
+        <th>color</th>
+        <th>percentage</th>
+      </tr>
+    </thead>
+    <tbody id="js-test-cases-container">
+    </tbody>
+  </table>
+  <script src="polyfill.js"></script>
+  <script src="test.js"></script>
+  <script>
+  test.showPropTest();
+  test.showTestCases();
+  </script>
+</body>
+</html>

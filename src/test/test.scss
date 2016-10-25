@@ -1,18 +1,156 @@
-body {
+html {
+  min-width: 320px;
+  max-width: 800px;
+  margin: auto;
   margin: 0;
-  margin-left: 200px;
+  box-sizing: border-box;
 }
 
-fakemeter {
-  -moz-appearance: meterbar;
-  -webkit-appearance: meter;
+* {
+  box-sizing: inherit;
+}
+
+body {
+  font-family: sans-serif;
+}
+
+<%= METER_TAG %> {
   box-sizing: border-box;
   display: inline-block;
+  *display: inline;
+  *zoom: 1;
   height: 1em;
   width: 5em;
   vertical-align: -0.2em;
-  -moz-user-select: none;
+  user-select: none;
+  border: 1px solid lightyellow;
 }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1em;
+}
+
+caption {
+  background: #ddd;
+  padding: 5px;
+  text-align: left;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 5px;
+}
+
+.meter-list {
+  td {
+    text-align: center;
+  }
+}
+
+.test-result-list {
+  td:last-child {
+    text-align: center;
+  }
+}
+@media
+only screen and (max-width: 760px),
+(min-device-width: 768px) and (max-device-width: 1024px)  {
+  .test-result-list {
+    display: block;
+
+    /* Force table to not be like tables anymore */
+    table, thead, tbody, th, td, tr, caption {
+      display: block;
+    }
+
+    /* Hide table headers (but not display: none;, for accessibility) */
+    thead tr {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+    }
+
+    tr, caption {margin-bottom: .5em}
+
+    td {
+      /* Behave  like a "row" */
+      position: relative;
+      padding-left: 6em;
+      margin-top: -1px;
+      word-break: break-all;
+    }
+
+    td:before {
+      /* Now like a table header */
+      position: absolute;
+      /* Top/left values mimic padding */
+      top: 0;
+      left: 0;
+      text-align: left;
+      bottom: 0;
+      border-right: 1px solid #ddd;
+      width: 4.5em;
+      padding: 5px;
+    }
+
+    td:last-of-type {
+      text-align: left;
+    }
+
+    /*
+    Label the data
+    */
+    td:nth-of-type(1):before { content: "test"; }
+    td:nth-of-type(2):before { content: "message"; }
+    td:nth-of-type(3):before { content: "result"; }
+  }
+}
+
+
+
+.color-indicator {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  *display: inline;
+  *zoom: 1;
+}
+
+.percentage-indicator {
+  border: 1px solid #ddd;
+  display: inline-block;
+  *display: inline;
+  *zoom: 1;
+  width: 5em;
+  position: relative;
+  line-height: 1;
+
+  i {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: #eee;
+    width: 0;
+    z-index: -1;
+  }
+}
+
+.result-pass {
+  color: green;
+}
+
+.result-failed {
+  color: red;
+}
+
+.result-unknow {
+  color: gray;
+}
+
 
 button {
   cursor: pointer;

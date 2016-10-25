@@ -6,4 +6,20 @@ known issue:
 3. ie<9 might not work completely
 
 test:
-https://fisker.github.io/meter-polyfill/test/test.html
+https://fisker.github.io/meter-polyfill/test/meter.html
+```
+<script src="path/to/meter-polyfill.min.js"></script>
+<script>
+console.log(meterPolyfill);
+</script>
+```
+
+amd loader
+```
+<script src="require.min.js"></script>
+<script>
+require(['path/to/meter-polyfill.min.js'], function(meterPolyfill) {
+  console.log(meterPolyfill);
+});
+</script>
+```

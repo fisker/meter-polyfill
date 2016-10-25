@@ -30,7 +30,7 @@ meter {
 .meter-suboptimum-value,
 .meter-even-less-good-value {
   -moz-appearance: meterchunk;
-  max-width: 100%;
+  width: 100%;
   height: 100%;
   box-sizing: border-box;
   user-modify: read-only;

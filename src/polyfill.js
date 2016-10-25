@@ -11,6 +11,7 @@
 })(this, function(window) {
   'use strict';
 
+  var METER_TAG = '<%= METER_TAG %>';
   var LEVEL_OPTIMUN = 1;
   var LEVEL_SUBOPTIMUN = 2;
   var LEVEL_SUBSUBOPTIMUN = 3;
@@ -21,7 +22,6 @@
   var PROP_VALUE = 'value';
   var PROP_OPTIMUN = 'optimum';
   var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN];
-  var METER_TAG = 'FAKEMETER';
   var METER_CLASS_PREFIX = 'meter-';
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
     'HTML',
@@ -173,6 +173,10 @@
 
 
   // help functions
+  function isUndefined(obj) {
+    return typeof obj === 'undefined';
+  }
+
   function each(arrLike, fn) {
     for (var i = 0, len = arrLike.length; i < len; i++) {
       fn(arrLike[i], i);
@@ -192,6 +196,7 @@
   }
 
   function fixProps(meter, props) {
+    var isMeterElement = isMeter(meter);
     // must has a min/max value
     each([PROP_MIN, PROP_MAX], function(prop) {
       var value = +meter[prop];
@@ -210,6 +215,9 @@
           if (meter[PROP_LOW] < meter[PROP_MIN]) {
             meter[PROP_LOW] = meter[PROP_MIN];
           }
+          if (!isMeterElement && isUndefined(meter[PROP_LOW])) {
+            meter[PROP_LOW] = meter[PROP_MIN];
+          }
           break;
         case PROP_HIGH:
           if (meter[PROP_HIGH] > meter[PROP_MAX]) {
@@ -218,9 +226,12 @@
           if (meter[PROP_HIGH] < meter[PROP_LOW]) {
             meter[PROP_HIGH] = meter[PROP_LOW];
           }
+          if (!isMeterElement && isUndefined(meter[PROP_HIGH])) {
+            meter[PROP_HIGH] = meter[PROP_MAX];
+          }
           break;
         case PROP_VALUE:
-          if (isMeter(meter) && typeof meter[PROP_VALUE] === 'undefined') {
+          if (isMeterElement && isUndefined(meter[PROP_VALUE])) {
             meter.removeAttribute(PROP_VALUE);
           } else {
             if (
@@ -236,10 +247,10 @@
           break;
         case PROP_OPTIMUN:
           if (
-            (typeof meter[PROP_OPTIMUN] === 'undefined') ||
+            isUndefined(meter[PROP_OPTIMUN]) ||
             (meter[PROP_OPTIMUN] < meter[PROP_MIN] || meter[PROP_OPTIMUN] > meter[PROP_MAX])
           ) {
-            if (isMeter(meter)) {
+            if (isMeterElement) {
               meter.removeAttribute(PROP_OPTIMUN);
             } else {
               meter[PROP_OPTIMUN] = meter[PROP_MIN] + (meter[PROP_MAX] - meter[PROP_MIN]) / 2;

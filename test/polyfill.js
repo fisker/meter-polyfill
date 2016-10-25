@@ -11,6 +11,7 @@
 })(this, function(window) {
   'use strict';
 
+  var METER_TAG = 'FAKEMETER';
   var LEVEL_OPTIMUN = 1;
   var LEVEL_SUBOPTIMUN = 2;
   var LEVEL_SUBSUBOPTIMUN = 3;
@@ -21,7 +22,6 @@
   var PROP_VALUE = 'value';
   var PROP_OPTIMUN = 'optimum';
   var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN];
-  var METER_TAG = 'FAKEMETER';
   var METER_CLASS_PREFIX = 'meter-';
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
     'HTML',
@@ -106,15 +106,14 @@
   // use getComputedStyle find the right calculator
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
-  meterElement[PROP_MIN] = '0';
-  meterElement.setAttribute(PROP_HIGH, '1');
+  meterElement[METER_TAG] = METER_TAG;
 
   var supports = {
     native: meterElement[PROP_MAX] === 1,
     MutationObserver: !!MutationObserver,
     addEventListener: !!window.addEventListener,
     attachEvent: !!window.attachEvent,
-    syncAttribute: meterElement.getAttribute(PROP_MIN) === '0' && meterElement[PROP_HIGH] === '1',
+    attersAsProps: meterElement.getAttribute(METER_TAG) === METER_TAG, // (IE8- bug)
     unknownElement: !!meterElement.constructor,
     hasAttribute: !!meterElement.hasAttribute,
     propertychange: 'onpropertychange' in document
@@ -174,6 +173,10 @@
 
 
   // help functions
+  function isUndefined(obj) {
+    return typeof obj === 'undefined';
+  }
+
   function each(arrLike, fn) {
     for (var i = 0, len = arrLike.length; i < len; i++) {
       fn(arrLike[i], i);
@@ -193,6 +196,7 @@
   }
 
   function fixProps(meter, props) {
+    var isMeterElement = isMeter(meter);
     // must has a min/max value
     each([PROP_MIN, PROP_MAX], function(prop) {
       var value = +meter[prop];
@@ -211,6 +215,9 @@
           if (meter[PROP_LOW] < meter[PROP_MIN]) {
             meter[PROP_LOW] = meter[PROP_MIN];
           }
+          if (!isMeterElement && isUndefined(meter[PROP_LOW])) {
+            meter[PROP_LOW] = meter[PROP_MIN];
+          }
           break;
         case PROP_HIGH:
           if (meter[PROP_HIGH] > meter[PROP_MAX]) {
@@ -219,9 +226,12 @@
           if (meter[PROP_HIGH] < meter[PROP_LOW]) {
             meter[PROP_HIGH] = meter[PROP_LOW];
           }
+          if (!isMeterElement && isUndefined(meter[PROP_HIGH])) {
+            meter[PROP_HIGH] = meter[PROP_MAX];
+          }
           break;
         case PROP_VALUE:
-          if (isMeter(meter) && typeof meter[PROP_VALUE] === 'undefined') {
+          if (isMeterElement && isUndefined(meter[PROP_VALUE])) {
             meter.removeAttribute(PROP_VALUE);
           } else {
             if (
@@ -237,10 +247,10 @@
           break;
         case PROP_OPTIMUN:
           if (
-            (typeof meter[PROP_OPTIMUN] === 'undefined') ||
+            isUndefined(meter[PROP_OPTIMUN]) ||
             (meter[PROP_OPTIMUN] < meter[PROP_MIN] || meter[PROP_OPTIMUN] > meter[PROP_MAX])
           ) {
-            if (isMeter(meter)) {
+            if (isMeterElement) {
               meter.removeAttribute(PROP_OPTIMUN);
             } else {
               meter[PROP_OPTIMUN] = meter[PROP_MIN] + (meter[PROP_MAX] - meter[PROP_MIN]) / 2;
@@ -366,7 +376,7 @@
         fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
         break;
       case PROP_MAX:
-        value = max(value, meter[PROP_MAX]);
+        value = max(value, meter[PROP_MIN]);
         meter.setAttribute(attr, value);
         fixProps(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
         break;
@@ -484,10 +494,8 @@
     var prototype = meterElement.constructor.prototype;
     function getSetter(prop) {
       return function(value) {
-        if (isMeter(this)) {
+        if(!supports.attersAsProps && isMeter(this)) {
           setMeterAttribute(this, prop.toLowerCase(), +value);
-        } else {
-          return this[prop] = value;
         }
       };
     }
@@ -514,15 +522,12 @@
     }
 
     each(METER_PROPS, function(prop) {
-      var props = {
+      Object.defineProperty(prototype, prop, {
         // enumerable: true, // can't do this on ie8
         // configurable: true
-      };
-      if (!supports.syncAttribute) {
-        props.set = getSetter(prop);
-      }
-      props.get = getGetter(prop);
-      Object.defineProperty(prototype, prop, props);
+        set: getSetter(prop),
+        get: getGetter(prop)
+      });
     });
 
     // ie 8
@@ -576,12 +581,12 @@
     }
   })();
 
-  (function autoPolyfill() {
+  (function polyfillWhenReady() {
     if (isReady) {
       polyfill();
       observerSubtree();
     } else {
-      setTimeout(autoPolyfill, 50);
+      setTimeout(polyfillWhenReady, 50);
     }
   })();
 

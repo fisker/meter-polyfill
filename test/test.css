@@ -1,18 +1,131 @@
-body {
+html {
+  min-width: 320px;
+  max-width: 800px;
+  margin: auto;
   margin: 0;
-  margin-left: 200px; }
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box; }
 
-fakemeter {
-  -moz-appearance: meterbar;
-  -webkit-appearance: meter;
+* {
+  -webkit-box-sizing: inherit;
+     -moz-box-sizing: inherit;
+          box-sizing: inherit; }
+
+body {
+  font-family: sans-serif; }
+
+FAKEMETER {
   -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;
           box-sizing: border-box;
   display: inline-block;
+  *display: inline;
+  *zoom: 1;
   height: 1em;
   width: 5em;
   vertical-align: -0.2em;
-  -moz-user-select: none; }
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  border: 1px solid lightyellow; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1em; }
+
+caption {
+  background: #ddd;
+  padding: 5px;
+  text-align: left; }
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 5px; }
+
+.meter-list td {
+  text-align: center; }
+
+.test-result-list td:last-child {
+  text-align: center; }
+
+@media only screen and (max-width: 760px), (min-device-width: 768px) and (max-device-width: 1024px) {
+  .test-result-list {
+    display: block;
+    /* Force table to not be like tables anymore */
+    /* Hide table headers (but not display: none;, for accessibility) */
+    /*
+    Label the data
+    */ }
+    .test-result-list table, .test-result-list thead, .test-result-list tbody, .test-result-list th, .test-result-list td, .test-result-list tr, .test-result-list caption {
+      display: block; }
+    .test-result-list thead tr {
+      position: absolute;
+      top: -9999px;
+      left: -9999px; }
+    .test-result-list tr, .test-result-list caption {
+      margin-bottom: .5em; }
+    .test-result-list td {
+      /* Behave  like a "row" */
+      position: relative;
+      padding-left: 6em;
+      margin-top: -1px;
+      word-break: break-all; }
+    .test-result-list td:before {
+      /* Now like a table header */
+      position: absolute;
+      /* Top/left values mimic padding */
+      top: 0;
+      left: 0;
+      text-align: left;
+      bottom: 0;
+      border-right: 1px solid #ddd;
+      width: 4.5em;
+      padding: 5px; }
+    .test-result-list td:last-of-type {
+      text-align: left; }
+    .test-result-list td:nth-of-type(1):before {
+      content: "test"; }
+    .test-result-list td:nth-of-type(2):before {
+      content: "message"; }
+    .test-result-list td:nth-of-type(3):before {
+      content: "result"; } }
+
+.color-indicator {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  *display: inline;
+  *zoom: 1; }
+
+.percentage-indicator {
+  border: 1px solid #ddd;
+  display: inline-block;
+  *display: inline;
+  *zoom: 1;
+  width: 5em;
+  position: relative;
+  line-height: 1; }
+  .percentage-indicator i {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: #eee;
+    width: 0;
+    z-index: -1; }
+
+.result-pass {
+  color: green; }
+
+.result-failed {
+  color: red; }
+
+.result-unknow {
+  color: gray; }
 
 button {
   cursor: pointer; }
