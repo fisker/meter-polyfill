@@ -113,7 +113,7 @@
     MutationObserver: !!MutationObserver,
     addEventListener: !!window.addEventListener,
     attachEvent: !!window.attachEvent,
-    attersAsProps: meterElement.getAttribute(PROP_MIN) === METER_TAG, // (IE8- bug)
+    attersAsProps: meterElement.getAttribute(METER_TAG) === METER_TAG, // (IE8- bug)
     unknownElement: !!meterElement.constructor,
     hasAttribute: !!meterElement.hasAttribute,
     propertychange: 'onpropertychange' in document
@@ -365,7 +365,7 @@
         fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
         break;
       case PROP_MAX:
-        value = max(value, meter[PROP_MAX]);
+        value = max(value, meter[PROP_MIN]);
         meter.setAttribute(attr, value);
         fixProps(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
         break;
@@ -483,10 +483,8 @@
     var prototype = meterElement.constructor.prototype;
     function getSetter(prop) {
       return function(value) {
-        if (isMeter(this)) {
-          if(!supports.attersAsProps) {
-            setMeterAttribute(this, prop.toLowerCase(), +value);
-          }
+        if(!supports.attersAsProps && isMeter(this)) {
+          setMeterAttribute(this, prop.toLowerCase(), +value);
         }
       };
     }
@@ -572,12 +570,12 @@
     }
   })();
 
-  (function autoPolyfill() {
+  (function polyfillWhenReady() {
     if (isReady) {
       polyfill();
       observerSubtree();
     } else {
-      setTimeout(autoPolyfill, 50);
+      setTimeout(polyfillWhenReady, 50);
     }
   })();
 
