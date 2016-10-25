@@ -11,8 +11,8 @@
 })(this, function(window) {
   'use strict';
 
-  var LEVEL_SUBOPTIMUN = 1;
-  var LEVEL_OPTIMUN = 2;
+  var LEVEL_OPTIMUN = 1;
+  var LEVEL_SUBOPTIMUN = 2;
   var LEVEL_SUBSUBOPTIMUN = 3;
   var PROP_MIN = 'min';
   var PROP_MAX = 'max';
@@ -21,13 +21,14 @@
   var PROP_VALUE = 'value';
   var PROP_OPTIMUN = 'optimum';
   var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN];
-  var METER_TAG = 'METER';
+  var METER_TAG = 'FAKEMETER';
   var METER_CLASS_PREFIX = 'meter-';
-  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = 'HTML' +
-    METER_TAG.toLowerCase().replace(/^(.)(.*)$/,function(_, $1, $2){
+  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
+    'HTML',
+    METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
         return $1.toUpperCase() + $2.toLowerCase()
-    }) +
-    'Element';
+    }),
+    'Element'].join();
   var DOCUMENT_CREAMENT_METHOD = 'createElement';
 
   var METER_VALUE_CLASSES = {
@@ -304,7 +305,7 @@
     return {
       percentage: percentage,
       level: level,
-      style: METER_VALUE_CLASSES[level]
+      className: METER_VALUE_CLASSES[level]
     };
   }
 
@@ -404,7 +405,7 @@
     });
 
     var level = calcLevel(props);
-    valueElement.className = METER_VALUE_CLASSES[level.level];
+    valueElement.className = level.className;
     valueElement.style.width = level.percentage + '%';
 
     return meter;
@@ -545,7 +546,7 @@
       isReady = true;
     });
 
-    on.document('readystatechange', completed);
+    on(document, 'readystatechange', completed);
 
     // uglify will break window without a wrapper
     var isTop = false;
