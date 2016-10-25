@@ -399,7 +399,7 @@
     }
     var innerDivs = meter.getElementsByTagName('div');
     if (!innerDivs.length || !innerDivs[2]) {
-      throw 'meter polyfilled shadow dom is not currect.';
+      throw new Error(METER_TAG + ' polyfilled shadow dom is not currect.');
     }
     var valueElement = innerDivs[2];
 
