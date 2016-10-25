@@ -106,15 +106,14 @@
   // use getComputedStyle find the right calculator
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
-  meterElement[PROP_MIN] = '0';
-  meterElement.setAttribute(PROP_HIGH, '1');
+  meterElement[METER_TAG] = METER_TAG;
 
   var supports = {
     native: meterElement[PROP_MAX] === 1,
     MutationObserver: !!MutationObserver,
     addEventListener: !!window.addEventListener,
     attachEvent: !!window.attachEvent,
-    syncAttribute: meterElement.getAttribute(PROP_MIN) === '0' && meterElement[PROP_HIGH] === '1',
+    attersAsProps: meterElement.getAttribute(PROP_MIN) === METER_TAG, // (IE8- bug)
     unknownElement: !!meterElement.constructor,
     hasAttribute: !!meterElement.hasAttribute,
     propertychange: 'onpropertychange' in document
@@ -485,9 +484,9 @@
     function getSetter(prop) {
       return function(value) {
         if (isMeter(this)) {
-          setMeterAttribute(this, prop.toLowerCase(), +value);
-        } else {
-          return this[prop] = value;
+          if(!supports.attersAsProps) {
+            setMeterAttribute(this, prop.toLowerCase(), +value);
+          }
         }
       };
     }
@@ -514,15 +513,12 @@
     }
 
     each(METER_PROPS, function(prop) {
-      var props = {
+      Object.defineProperty(prototype, prop, {
         // enumerable: true, // can't do this on ie8
         // configurable: true
-      };
-      if (!supports.syncAttribute) {
-        props.set = getSetter(prop);
-      }
-      props.get = getGetter(prop);
-      Object.defineProperty(prototype, prop, props);
+        set: getSetter(prop),
+        get: getGetter(prop)
+      });
     });
 
     // ie 8
