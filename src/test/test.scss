@@ -15,7 +15,7 @@ body {
 }
 
 meter {
-  vertical-align: center;
+  vertical-align: middle;
 }
 
 <%= METER_TAG %> {
@@ -27,7 +27,7 @@ meter {
   width: 5em;
   user-select: none;
   border: 1px solid lightyellow;
-  vertical-align: center;
+  vertical-align: middle;
 }
 
 table {
@@ -59,9 +59,7 @@ td {
     text-align: center;
   }
 }
-@media
-only screen and (max-width: 760px),
-(min-device-width: 768px) and (max-device-width: 1024px)  {
+@media only screen and (max-width: 720px) {
   .test-result-list {
     display: block;
 
@@ -113,8 +111,6 @@ only screen and (max-width: 760px),
   }
 }
 
-
-
 .color-indicator {
   width: 1em;
   height: 1em;
@@ -122,6 +118,7 @@ only screen and (max-width: 760px),
   *display: inline;
   *zoom: 1;
   appearance: none;
+  vertical-align: middle;
 }
 
 .percentage-indicator {

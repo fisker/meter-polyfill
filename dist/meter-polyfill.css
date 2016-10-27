@@ -1,6 +1,6 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.0.0
+ * @version v1.1.0
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
@@ -49,7 +49,7 @@ meter {
 .meter-suboptimum-value,
 .meter-even-less-good-value {
   -moz-appearance: meterchunk;
-  max-width: 100%;
+  width: 100%;
   height: 100%;
   -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;

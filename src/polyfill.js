@@ -12,16 +12,16 @@
   'use strict';
 
   var METER_TAG = '<%= METER_TAG %>';
-  var LEVEL_OPTIMUN = 1;
-  var LEVEL_SUBOPTIMUN = 2;
-  var LEVEL_SUBSUBOPTIMUN = 3;
+  var LEVEL_OPTIMUM = 1;
+  var LEVEL_SUBOPTIMUM = 2;
+  var LEVEL_SUBSUBOPTIMUM = 3;
   var PROP_MIN = 'min';
   var PROP_MAX = 'max';
   var PROP_LOW = 'low';
   var PROP_HIGH = 'high';
   var PROP_VALUE = 'value';
-  var PROP_OPTIMUN = 'optimum';
-  var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN];
+  var PROP_OPTIMUM = 'optimum';
+  var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM];
   var METER_CLASS_PREFIX = 'meter-';
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
     'HTML',
@@ -36,9 +36,27 @@
     bar: METER_CLASS_PREFIX + 'bar'
   };
 
-  METER_VALUE_CLASSES[LEVEL_OPTIMUN] = METER_CLASS_PREFIX + 'optimum-value';
-  METER_VALUE_CLASSES[LEVEL_SUBOPTIMUN] = METER_CLASS_PREFIX + 'suboptimum-value';
-  METER_VALUE_CLASSES[LEVEL_SUBSUBOPTIMUN] = METER_CLASS_PREFIX + 'even-less-good-value';
+  METER_VALUE_CLASSES[LEVEL_OPTIMUM] = METER_CLASS_PREFIX + 'optimum-value';
+  METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] = METER_CLASS_PREFIX + 'suboptimum-value';
+  METER_VALUE_CLASSES[LEVEL_SUBSUBOPTIMUM] = METER_CLASS_PREFIX + 'even-less-good-value';
+
+  var METER_INITAL_VALUES = {
+    min: 0,
+    max: 1,
+    low: 0,
+    high: 1
+  };
+
+  var NOOP = function() {};
+
+  var meterPolyfill = {
+    CLASSES: METER_VALUE_CLASSES,
+    INITAL_VALUES: METER_INITAL_VALUES,
+    LEVEL_SUBOPTIMUM: LEVEL_SUBOPTIMUM,
+    LEVEL_OPTIMUM: LEVEL_OPTIMUM,
+    LEVEL_SUBSUBOPTIMUM: LEVEL_SUBSUBOPTIMUM,
+    polyfill: NOOP
+  };
 
   if (!Function.prototype.bind) {
     Function.prototype.bind = function(self) {
@@ -74,7 +92,6 @@
   var meterElement = createElement(METER_TAG);
 
   var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
-
     function HTMLMeterElement() {
       throw new TypeError('Illegal constructor');
     }
@@ -106,89 +123,8 @@
   // use getComputedStyle find the right calculator
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
-  meterElement[METER_TAG] = METER_TAG;
-
-  var supports = {
-    native: meterElement[PROP_MAX] === 1,
-    MutationObserver: !!MutationObserver,
-    addEventListener: !!window.addEventListener,
-    attachEvent: !!window.attachEvent,
-    attersAsProps: meterElement.getAttribute(METER_TAG) === METER_TAG, // (IE8- bug)
-    unknownElement: !!meterElement.constructor,
-    hasAttribute: !!meterElement.hasAttribute,
-    propertychange: 'onpropertychange' in document
-  };
-
-  function on(el, events, listener, useCapture) {
-    each(events.split(' '), function(event) {
-      if (supports.addEventListener) {
-        el.addEventListener(event, listener, !!useCapture);
-      } else if (supports.attachEvent) {
-        el.attachEvent('on' + event, listener);
-      } else {
-        el['on' + event] = listener;
-      }
-    });
-  }
-
-  if (!supports.MutationObserver) {
-    var supportsDOMNodeInserted = false;
-    var supportsDOMAttrModified = false;
-    var testDiv = createElement('div');
-    var testChild = createElement('div');
-    on(testDiv, 'DOMNodeInserted', function() {
-      supportsDOMNodeInserted = true;
-    });
-    testDiv.appendChild(testChild);
-    on(testDiv, 'DOMAttrModified', function() {
-      supportsDOMAttrModified = true;
-    });
-    testDiv.setAttribute(PROP_MIN, 1);
-    testChild = null;
-    testDiv = null;
-
-    supports.DOMNodeInserted = supportsDOMNodeInserted;
-    supports.DOMAttrModified = supportsDOMAttrModified;
-  }
-
-  var METER_INITAL_VALUES = {
-    min: 0,
-    max: 1,
-    low: 0,
-    high: 1
-  };
-
-  var METER_SHADOW_HTML = [
-    '<div class="' + METER_VALUE_CLASSES.inner + '">',
-      '<div class="' + METER_VALUE_CLASSES.bar + '">',
-        '<div class="' + METER_VALUE_CLASSES[LEVEL_SUBOPTIMUN] + '" style="width: 0">',
-        '</div>',
-      '</div>',
-    '</div>'
-  ].join('');
-
-  var min = Math[PROP_MIN];
-  var max = Math[PROP_MAX];
-  var setTimeout = window.setTimeout;
-
-
-  // help functions
   function isUndefined(obj) {
     return typeof obj === 'undefined';
-  }
-
-  function each(arrLike, fn) {
-    for (var i = 0, len = arrLike.length; i < len; i++) {
-      fn(arrLike[i], i);
-    }
-  }
-
-  function hasAttribute(el, name) {
-    if (supports.hasAttribute) {
-      return el.hasAttribute(name);
-    } else {
-      return el.getAttribute(name) !== null;
-    }
   }
 
   function isMeter(el) {
@@ -245,15 +181,15 @@
             }
           }
           break;
-        case PROP_OPTIMUN:
+        case PROP_OPTIMUM:
           if (
-            isUndefined(meter[PROP_OPTIMUN]) ||
-            (meter[PROP_OPTIMUN] < meter[PROP_MIN] || meter[PROP_OPTIMUN] > meter[PROP_MAX])
+            isUndefined(meter[PROP_OPTIMUM]) ||
+            (meter[PROP_OPTIMUM] < meter[PROP_MIN] || meter[PROP_OPTIMUM] > meter[PROP_MAX])
           ) {
             if (isMeterElement) {
-              meter.removeAttribute(PROP_OPTIMUN);
+              meter.removeAttribute(PROP_OPTIMUM);
             } else {
-              meter[PROP_OPTIMUN] = meter[PROP_MIN] + (meter[PROP_MAX] - meter[PROP_MIN]) / 2;
+              meter[PROP_OPTIMUM] = meter[PROP_MIN] + (meter[PROP_MAX] - meter[PROP_MIN]) / 2;
             }
           }
           break;
@@ -271,11 +207,11 @@
     var max = props[PROP_MAX];
     var low = props[PROP_LOW];
     var high = props[PROP_HIGH];
-    var optimum = props[PROP_OPTIMUN];
+    var optimum = props[PROP_OPTIMUM];
     var value = props[PROP_VALUE];
 
     var percentage = min === max ? 0 : (value - min) / (max - min) * 100;
-    var level = LEVEL_OPTIMUN;
+    var level = LEVEL_OPTIMUM;
 
     if (
       high === max ||
@@ -288,26 +224,26 @@
         (high < optimum && value < high) ||
         (high >= optimum && value > high)
       ) {
-        level = LEVEL_SUBOPTIMUN;
+        level = LEVEL_SUBOPTIMUM;
       }
     } else if (low === high) {
       if (
         (low <= optimum && value < low) ||
         (high > optimum && value > high)
       ) {
-        level = LEVEL_SUBSUBOPTIMUN;
+        level = LEVEL_SUBSUBOPTIMUM;
       }
     } else if (optimum < low) {
       if (value > low && value <= high) {
-        level = LEVEL_SUBOPTIMUN;
+        level = LEVEL_SUBOPTIMUM;
       } else if (value > high) {
-        level = LEVEL_SUBSUBOPTIMUN;
+        level = LEVEL_SUBSUBOPTIMUM;
       }
     } else if (optimum > high) {
       if (value >= low && value < high) {
-        level = LEVEL_SUBOPTIMUN;
+        level = LEVEL_SUBOPTIMUM;
       } else if (value < low) {
-        level = LEVEL_SUBSUBOPTIMUN;
+        level = LEVEL_SUBSUBOPTIMUM;
       }
     }
 
@@ -324,7 +260,7 @@
         (optimum < low && value === low)
       )
      ) {
-      level = LEVEL_SUBOPTIMUN;
+      level = LEVEL_SUBOPTIMUM;
     }
 
     return {
@@ -332,6 +268,88 @@
       level: level,
       className: METER_VALUE_CLASSES[level]
     };
+  }
+
+  meterPolyfill.fix = fixProps;
+  meterPolyfill.calc = calcLevel;
+
+  if (meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX]) {
+    return meterPolyfill;
+  }
+
+
+  meterElement[METER_TAG] = METER_TAG;
+  var supports = {
+    native: meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX],
+    MutationObserver: !!MutationObserver,
+    addEventListener: !!window.addEventListener,
+    attachEvent: !!window.attachEvent,
+    attersAsProps: meterElement.getAttribute(METER_TAG) === METER_TAG, // (IE8- bug)
+    unknownElement: !!meterElement.constructor,
+    hasAttribute: !!meterElement.hasAttribute,
+    propertychange: 'onpropertychange' in document
+  };
+
+  function on(el, events, listener, useCapture) {
+    each(events.split(' '), function(event) {
+      if (supports.addEventListener) {
+        el.addEventListener(event, listener, !!useCapture);
+      } else if (supports.attachEvent) {
+        el.attachEvent('on' + event, listener);
+      } else {
+        el['on' + event] = listener;
+      }
+    });
+  }
+
+  if (!supports.MutationObserver) {
+    var supportsDOMNodeInserted = false;
+    var supportsDOMAttrModified = false;
+    var testDiv = createElement('div');
+    var testChild = createElement('div');
+    on(testDiv, 'DOMNodeInserted', function() {
+      supportsDOMNodeInserted = true;
+    });
+    testDiv.appendChild(testChild);
+    on(testDiv, 'DOMAttrModified', function() {
+      supportsDOMAttrModified = true;
+    });
+    testDiv.setAttribute(PROP_MIN, 1);
+    testChild = null;
+    testDiv = null;
+
+    supports.DOMNodeInserted = supportsDOMNodeInserted;
+    supports.DOMAttrModified = supportsDOMAttrModified;
+  }
+
+  var METER_SHADOW_HTML = [
+    '<div class="' + METER_VALUE_CLASSES.inner + '">',
+      '<div class="' + METER_VALUE_CLASSES.bar + '">',
+        '<div class="' + METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] + '" style="width: 0">',
+        '</div>',
+      '</div>',
+    '</div>'
+  ].join('');
+
+  var min = Math[PROP_MIN];
+  var max = Math[PROP_MAX];
+  var setTimeout = window.setTimeout;
+
+
+  // help functions
+
+  function each(arrLike, fn) {
+    for (var i = 0, len = arrLike.length; i < len; i++) {
+      fn(arrLike[i], i);
+    }
+  }
+
+  function hasAttribute(el, name) {
+    if (supports.hasAttribute) {
+      return el.hasAttribute(name);
+    } else {
+      return el.getAttribute(name) !== null;
+    }
   }
 
   function createShadow(meter) {
@@ -378,12 +396,12 @@
     switch (attr) {
       case PROP_MIN:
         meter.setAttribute(attr, value);
-        fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
+        fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM]);
         break;
       case PROP_MAX:
         value = max(value, meter[PROP_MIN]);
         meter.setAttribute(attr, value);
-        fixProps(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUN]);
+        fixProps(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM]);
         break;
       case PROP_LOW:
         value = min(max(value, meter[PROP_MIN]), meter[PROP_MAX]);
@@ -394,7 +412,7 @@
         value = min(max(value, meter[PROP_MIN], meter[PROP_LOW]), meter[PROP_MAX]);
         meter.setAttribute(attr, value);
         break;
-      case PROP_OPTIMUN:
+      case PROP_OPTIMUM:
         value = min(max(value, meter[PROP_MIN]), meter[PROP_MAX]);
         meter.setAttribute(attr, value);
         break;
@@ -514,7 +532,7 @@
             return this[PROP_MIN];
           } else if (prop === PROP_HIGH) {
             return this[PROP_MAX];
-          } else if (prop === PROP_OPTIMUN) {
+          } else if (prop === PROP_OPTIMUM) {
             return (this[PROP_MAX] - this[PROP_MIN]) / 2 + this[PROP_MIN];
           } else if (prop === PROP_VALUE) {
             return this[PROP_MIN];
@@ -595,15 +613,9 @@
     }
   })();
 
-  return {
-    CLASSES: METER_VALUE_CLASSES,
-    INITAL_VALUES: METER_INITAL_VALUES,
-    LEVEL_SUBOPTIMUN: LEVEL_SUBOPTIMUN,
-    LEVEL_OPTIMUN: LEVEL_OPTIMUN,
-    LEVEL_SUBSUBOPTIMUN: LEVEL_SUBSUBOPTIMUN,
-    polyfill: polyfill,
-    fix: fixProps,
-    calc: calcLevel
-  };
+
+  meterPolyfill.polyfill = polyfill;
+
+  return meterPolyfill;
 
 });

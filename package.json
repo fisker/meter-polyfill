@@ -1,6 +1,6 @@
 {
   "name": "meter-polyfill",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Polyfill for the meter element",
   "main": "dist/polyfill.js",
   "author": {

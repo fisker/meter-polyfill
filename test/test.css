@@ -16,7 +16,7 @@ body {
   font-family: sans-serif; }
 
 meter {
-  vertical-align: center; }
+  vertical-align: middle; }
 
 FAKEMETER {
   -webkit-box-sizing: border-box;
@@ -32,7 +32,7 @@ FAKEMETER {
       -ms-user-select: none;
           user-select: none;
   border: 1px solid lightyellow;
-  vertical-align: center; }
+  vertical-align: middle; }
 
 table {
   border-collapse: collapse;
@@ -55,7 +55,7 @@ td {
 .test-result-list td:last-child {
   text-align: center; }
 
-@media only screen and (max-width: 760px), (min-device-width: 768px) and (max-device-width: 1024px) {
+@media only screen and (max-width: 720px) {
   .test-result-list {
     display: block;
     /* Force table to not be like tables anymore */
@@ -105,7 +105,8 @@ td {
   *zoom: 1;
   -webkit-appearance: none;
      -moz-appearance: none;
-          appearance: none; }
+          appearance: none;
+  vertical-align: middle; }
 
 .percentage-indicator {
   border: 1px solid #ddd;

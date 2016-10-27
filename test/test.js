@@ -13,9 +13,9 @@
 
   var METER_INITAL_VALUES = meterPolyfill.INITAL_VALUES;
   var METER_VALUE_CLASSES = meterPolyfill.CLASSES;
-  var LEVEL_SUBOPTIMUN = meterPolyfill.LEVEL_SUBOPTIMUN;
-  var LEVEL_OPTIMUN = meterPolyfill.LEVEL_OPTIMUN;
-  var LEVEL_SUBSUBOPTIMUN = meterPolyfill.LEVEL_SUBSUBOPTIMUN;
+  var LEVEL_SUBOPTIMUM = meterPolyfill.LEVEL_SUBOPTIMUM;
+  var LEVEL_OPTIMUM = meterPolyfill.LEVEL_OPTIMUM;
+  var LEVEL_SUBSUBOPTIMUM = meterPolyfill.LEVEL_SUBSUBOPTIMUM;
 
   function each(obj, fn) {
     if (obj.length) {
@@ -752,11 +752,11 @@
   //         try {
   //           var firefoxBg = getComputedStyle(meter, '::-moz-meter-bar').backgroundImage;
   //           if(firefoxBg.indexOf('rgb(170, 221, 119)') > -1 ){
-  //             return LEVEL_OPTIMUN;
+  //             return LEVEL_OPTIMUM;
   //           } else if(firefoxBg.indexOf('rgb(255, 238, 119)') > -1 ){
-  //             return LEVEL_SUBOPTIMUN;
+  //             return LEVEL_SUBOPTIMUM;
   //           } else if(firefoxBg.indexOf('rgb(255, 119, 119)') > -1 ){
-  //             return LEVEL_SUBSUBOPTIMUN;
+  //             return LEVEL_SUBSUBOPTIMUM;
   //           }
   //         } catch(_) {}
   //       // } else {
