@@ -12,25 +12,12 @@
 })(this, function(window) {
   'use strict';
 
+
   var METER_TAG = '<%= METER_TAG %>';
   var LEVEL_OPTIMUM = 1;
   var LEVEL_SUBOPTIMUM = 2;
   var LEVEL_SUBSUBOPTIMUM = 3;
-  var PROP_MIN = 'min';
-  var PROP_MAX = 'max';
-  var PROP_LOW = 'low';
-  var PROP_HIGH = 'high';
-  var PROP_VALUE = 'value';
-  var PROP_OPTIMUM = 'optimum';
-  var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM];
   var METER_CLASS_PREFIX = 'meter-';
-  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
-    'HTML',
-    METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
-        return $1.toUpperCase() + $2.toLowerCase()
-    }),
-    'Element'].join('');
-  var DOCUMENT_CREAMENT_METHOD = 'createElement';
 
   var METER_VALUE_CLASSES = {
     inner: METER_CLASS_PREFIX + 'inner-element',
@@ -41,6 +28,27 @@
   METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] = METER_CLASS_PREFIX + 'suboptimum-value';
   METER_VALUE_CLASSES[LEVEL_SUBSUBOPTIMUM] = METER_CLASS_PREFIX + 'even-less-good-value';
 
+  var NOOP = function() {};
+
+  var meterPolyfill = {
+    CLASSES: METER_VALUE_CLASSES,
+    LEVEL_SUBOPTIMUM: LEVEL_SUBOPTIMUM,
+    LEVEL_OPTIMUM: LEVEL_OPTIMUM,
+    LEVEL_SUBSUBOPTIMUM: LEVEL_SUBSUBOPTIMUM,
+    polyfill: NOOP
+  };
+
+  var PROP_MIN = 'min';
+  var PROP_MAX = 'max';
+  var PROP_LOW = 'low';
+  var PROP_HIGH = 'high';
+  var PROP_VALUE = 'value';
+  var PROP_OPTIMUM = 'optimum';
+
+  var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM];
+
+  var DOCUMENT_CREAMENT_METHOD = 'createElement';
+
   var METER_INITAL_VALUES = {
     min: 0,
     max: 1,
@@ -48,16 +56,13 @@
     high: 1
   };
 
-  var NOOP = function() {};
-
-  var meterPolyfill = {
-    CLASSES: METER_VALUE_CLASSES,
-    INITAL_VALUES: METER_INITAL_VALUES,
-    LEVEL_SUBOPTIMUM: LEVEL_SUBOPTIMUM,
-    LEVEL_OPTIMUM: LEVEL_OPTIMUM,
-    LEVEL_SUBSUBOPTIMUM: LEVEL_SUBSUBOPTIMUM,
-    polyfill: NOOP
-  };
+  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
+    'HTML',
+    METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
+        return $1.toUpperCase() + $2.toLowerCase()
+    }),
+    'Element'
+  ].join('');
 
   if (!Function.prototype.bind) {
     Function.prototype.bind = function(self) {
