@@ -1,6 +1,7 @@
 /* globals define: true, module: true*/
 (function(root, factory) {
   'use strict';
+
   if (typeof define === 'function' && define.amd) {
     define(factory(root));
   } else if (typeof module === 'object' && module.exports) {
@@ -67,11 +68,6 @@
     };
   }
 
-  var document = window.document;
-  var documentElement = document.documentElement;
-  // ie 8. document.createElement is not a function
-  var createElement = Function.prototype.bind.call(document[DOCUMENT_CREAMENT_METHOD], document);
-
   function createNativeFunction(fnName, fn) {
     function toString() {
       return 'function ' + fnName + '() { [native code] }';
@@ -89,7 +85,13 @@
     return fn;
   }
 
+  var document = window.document;
+  var documentElement = document.documentElement;
+  // ie 8. document.createElement is not a function
+  var createElement = Function.prototype.bind.call(document[DOCUMENT_CREAMENT_METHOD], document);
+
   var meterElement = createElement(METER_TAG);
+  var nativeSupport = meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX];
 
   var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
     function HTMLMeterElement() {
@@ -123,8 +125,8 @@
   // use getComputedStyle find the right calculator
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
-  function isUndefined(obj) {
-    return typeof obj === 'undefined';
+  function isUndefinedOrNaN(obj) {
+    return typeof obj === 'undefined' || isNaN(obj);
   }
 
   function isMeter(el) {
@@ -151,7 +153,7 @@
           if (meter[PROP_LOW] < meter[PROP_MIN]) {
             meter[PROP_LOW] = meter[PROP_MIN];
           }
-          if (!isMeterElement && isUndefined(meter[PROP_LOW])) {
+          if (!isMeterElement && isUndefinedOrNaN(meter[PROP_LOW])) {
             meter[PROP_LOW] = meter[PROP_MIN];
           }
           break;
@@ -162,12 +164,12 @@
           if (meter[PROP_HIGH] < meter[PROP_LOW]) {
             meter[PROP_HIGH] = meter[PROP_LOW];
           }
-          if (!isMeterElement && isUndefined(meter[PROP_HIGH])) {
+          if (!isMeterElement && isUndefinedOrNaN(meter[PROP_HIGH])) {
             meter[PROP_HIGH] = meter[PROP_MAX];
           }
           break;
         case PROP_VALUE:
-          if (isMeterElement && isUndefined(meter[PROP_VALUE])) {
+          if (isMeterElement && isUndefinedOrNaN(meter[PROP_VALUE])) {
             meter.removeAttribute(PROP_VALUE);
           } else {
             if (
@@ -183,7 +185,7 @@
           break;
         case PROP_OPTIMUM:
           if (
-            isUndefined(meter[PROP_OPTIMUM]) ||
+            isUndefinedOrNaN(meter[PROP_OPTIMUM]) ||
             (meter[PROP_OPTIMUM] < meter[PROP_MIN] || meter[PROP_OPTIMUM] > meter[PROP_MAX])
           ) {
             if (isMeterElement) {
@@ -270,17 +272,14 @@
     };
   }
 
-  meterPolyfill.fix = fixProps;
   meterPolyfill.calc = calcLevel;
 
-  if (meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX]) {
+  if (nativeSupport) {
     return meterPolyfill;
   }
 
-
   meterElement[METER_TAG] = METER_TAG;
   var supports = {
-    native: meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX],
     MutationObserver: !!MutationObserver,
     addEventListener: !!window.addEventListener,
     attachEvent: !!window.attachEvent,
@@ -353,14 +352,13 @@
   }
 
   function createShadow(meter) {
-    if (supports.native || !isMeter(meter) || hasAttribute(meter, '_polyfill')) {
+    if (!isMeter(meter) || hasAttribute(meter, '_polyfill')) {
       return meter;
     }
 
-    meter.innerHTML = METER_SHADOW_HTML;
     meter.setAttribute('_polyfill', '');
+    meter.innerHTML = METER_SHADOW_HTML;
 
-    // meter.__proto__ = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME].prototype;
     fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE]);
 
     // observe subtree
@@ -423,13 +421,11 @@
   }
 
   function updateMeterStyle(meter) {
-    if (supports.native) {
-      return;
-    }
 
     if (!hasAttribute(meter, '_polyfill')) {
       return createShadow(meter);
     }
+
     var innerDivs = meter.getElementsByTagName('div');
     if (!innerDivs.length || !innerDivs[2]) {
       throw new Error(METER_TAG + ' polyfilled shadow dom is not currect.');
@@ -454,21 +450,22 @@
     return meter;
   }
 
+  // over write document.createElement
+  function documentCreateElemennt(tagName) {
+    var el = createElement.apply(document, arguments);
+    if (isMeter(el)) {
+      polyfill(el);
+    }
+    return el;
+  }
+  document[DOCUMENT_CREAMENT_METHOD] = createNativeFunction([DOCUMENT_CREAMENT_METHOD], documentCreateElemennt);
+
+  // maybe also cloneNode ??
+
   function observerSubtree() {
-    if (supports.native || isObservered) {
+    if (isObservered) {
       return;
     }
-
-    // over write document.createElement
-    function documentCreateElemennt(tagName) {
-      var el = createElement.apply(document, arguments);
-      if (isMeter(el)) {
-        polyfill(el);
-      }
-      return el;
-    }
-    document[DOCUMENT_CREAMENT_METHOD] = createNativeFunction([DOCUMENT_CREAMENT_METHOD], documentCreateElemennt);
-
 
     // observe subtree
     if (supports.MutationObserver) {
@@ -493,9 +490,6 @@
   }
 
   function polyfill(context) {
-    if (supports.native) {
-      return;
-    }
 
     var meters = [];
     if (isMeter(context)) {
@@ -505,21 +499,27 @@
     }
 
     each(meters, function(meter) {
+      // ie 8 fails
+      try {
+        meter.constructor = HTMLMeterElement;
+      } catch(_) {}
+      pollyfillGetterSetter(meter);
       updateMeterStyle(meter);
     });
   }
 
-  (function pollyfillGetterSetter() {
+  function pollyfillGetterSetter(meter) {
     if (!supports.unknownElement) {
       return;
     }
 
     var prototype = meterElement.constructor.prototype;
     function getSetter(prop) {
+      if (supports.attersAsProps) {
+        return;
+      }
       return function(value) {
-        if(!supports.attersAsProps && isMeter(this)) {
-          setMeterAttribute(this, prop.toLowerCase(), +value);
-        }
+        setMeterAttribute(this, prop.toLowerCase(), +value);
       };
     }
 
@@ -545,27 +545,14 @@
     }
 
     each(METER_PROPS, function(prop) {
-      Object.defineProperty(prototype, prop, {
+      Object.defineProperty(meter, prop, {
         // enumerable: true, // can't do this on ie8
         // configurable: true
         set: getSetter(prop),
         get: getGetter(prop)
       });
     });
-
-    // ie 8
-    // var setAttribute = prototype.setAttribute;
-    // console.log(setAttribute);
-    // Object.defineProperty(prototype, 'setAttribute', {
-    //   value: function(prop, value) {
-    //     this[prop] = value;
-    //     if (isMeter(this)) {
-    //       console.log('update');
-    //       updateMeterStyle(this);
-    //     }
-    //   }
-    // });
-  })();
+  }
 
   (function checkReady() {
 

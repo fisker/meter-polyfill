@@ -18,7 +18,7 @@
   var LEVEL_SUBSUBOPTIMUM = meterPolyfill.LEVEL_SUBSUBOPTIMUM;
 
   function each(obj, fn) {
-    if (obj.length) {
+    if (obj.length > 1) {
       for (var i = 0, len = obj.length; i < len; i++) {
         if (fn(obj[i], i, obj) === true) {
           break;
@@ -72,6 +72,17 @@
     }
   }
 
+  function setTbodyInnerHTML(tbody, html) {
+    try {
+      tbody.innerHTML = html.join('');
+    } catch(_) {
+      // ie 9-
+      var div = document.createElement('div');
+      div.innerHTML = '<table><tbody>' + html + '</tbody>tbody></table>';
+      var newTbody = div.getElementsByTagName('tbody')[0];
+      tbody.parentNode.replaceChild(newTbody, tbody);
+    }
+  }
 
   var testCase = [];
 
@@ -564,14 +575,14 @@
         function () {
           return '' + document.createElement.toString;
         },
-        window.toString.toString.toString()
+        Function.toString.toString.toString()
       ],
       [
         'document.createElement.toString.toString',
         function () {
           return '' + document.createElement.toString.toString;
         },
-        window.toString.toString.toString()
+        Function.toString.toString.toString()
       ],
       [
         HTML_METER_ELEMENT_CONSTRICTOR_NAME,
@@ -605,10 +616,20 @@
         },
         window[HTML_METER_ELEMENT_CONSTRICTOR_NAME]
       ],
+      [
+        'document.createElement(\'' + METER_TAG + '\').constructor',
+        function () {
+          return '' + document.createElement(METER_TAG).constructor;
+        },
+        'function HTMLFakemeterElement() { [native code] }'
+      ],
     ];
 
     var html = [];
     each(propTest, function(test) {
+      if (!test) {
+        return;
+      }
       var result = test[1]();
       var resultMsg = result === test[2] ?
         '<span class="result-pass">√</span>':
@@ -625,7 +646,7 @@
         '</tr>'
       ].join(''));
     });
-    document.getElementById('js-test-prototype-container').innerHTML = html.join('');
+    setTbodyInnerHTML(document.getElementById('js-test-prototype-container'), html.join(''));
   }
   test.showPropTest = showPropTest;
 
@@ -635,8 +656,7 @@
     var index = 1;
     each(testCase, function(category) {
       each(category.cases, function(test) {
-        var props = meterPolyfill.fix(assign({}, test));
-        var level = meterPolyfill.calc(props);
+        var level = meterPolyfill.calc(assign({}, test));
         html.push([
           '<tr>',
             '<td>' + (index++) + '</td>',
@@ -653,7 +673,7 @@
         ].join(''));
       });
     });
-    document.getElementById('js-test-cases-container').innerHTML = html.join('');
+    setTbodyInnerHTML(document.getElementById('js-test-cases-container'), html.join(''));
   }
   test.showTestCases = showTestCases;
 
