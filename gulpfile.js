@@ -10,9 +10,10 @@ var cleanCSS = require('gulp-clean-css');
 var rename = require('gulp-rename');
 var uglifyjs = require('uglify-js');
 var minifier = require('gulp-uglify/minifier');
-var server = require('gulp-server-livereload');
 var flatten = require('gulp-flatten');
 var replace = require('gulp-replace');
+var browserSync = require('browser-sync').create();
+
 
 var pkg = require('./package.json');
 var banner = ['/**',
@@ -115,7 +116,6 @@ gulp.task('styles:release', function() {
 });
 
 gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles:min'], function() {
-
 });
 
 gulp.task('test:scss', function() {
@@ -130,7 +130,8 @@ gulp.task('test:scss', function() {
     .pipe(autoprefixer(AUTOPREFIXER_BROWSERS))
     .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('test'))
-    .pipe(size({title: 'styles'}));
+    .pipe(size({title: 'styles'}))
+    .pipe(browserSync.stream());
 });
 
 gulp.task('test:misc', function() {
@@ -138,17 +139,23 @@ gulp.task('test:misc', function() {
     .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
     .pipe(flatten())
     .pipe(gulp.dest('test'))
-    .pipe(size({title: 'script'}));
+    .pipe(size({title: 'script'}))
+    .pipe(browserSync.stream());
 });
 
 gulp.task('test:server', function() {
-  return gulp.src('./')
-    .pipe(server({
-      livereload: true,
-      directoryListing: true,
-      open: true
-    }));
+  browserSync.init({
+    server: {
+      baseDir: './test/'
+    }
+  });
 
+  // return gulp.src('./')
+  //   .pipe(server({
+  //     livereload: true,
+  //     directoryListing: true,
+  //     open: true
+  //   }));
 });
 
 gulp.task('test', ['test:scss', 'test:misc', 'test:server'], function() {
