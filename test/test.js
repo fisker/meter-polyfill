@@ -656,9 +656,6 @@
     each(testCase, function(category) {
       each(category.cases, function(test) {
         var level = meterPolyfill.calc(assign({}, test));
-        if (level.percentage < 0) {
-          console.log(test);
-        }
         html.push([
           '<tr>',
             '<td>' + (index++) + '</td>',
