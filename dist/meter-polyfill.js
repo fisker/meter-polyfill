@@ -1,6 +1,6 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.1.0
+ * @version v1.2.0
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
@@ -8,6 +8,7 @@
 /* globals define: true, module: true*/
 (function(root, factory) {
   'use strict';
+
   if (typeof define === 'function' && define.amd) {
     define(factory(root));
   } else if (typeof module === 'object' && module.exports) {
@@ -19,24 +20,13 @@
   'use strict';
 
   var METER_TAG = 'METER';
+
+  var NOOP = function() {};
+
   var LEVEL_OPTIMUM = 1;
   var LEVEL_SUBOPTIMUM = 2;
   var LEVEL_SUBSUBOPTIMUM = 3;
-  var PROP_MIN = 'min';
-  var PROP_MAX = 'max';
-  var PROP_LOW = 'low';
-  var PROP_HIGH = 'high';
-  var PROP_VALUE = 'value';
-  var PROP_OPTIMUM = 'optimum';
-  var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM];
   var METER_CLASS_PREFIX = 'meter-';
-  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
-    'HTML',
-    METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
-        return $1.toUpperCase() + $2.toLowerCase()
-    }),
-    'Element'].join('');
-  var DOCUMENT_CREAMENT_METHOD = 'createElement';
 
   var METER_VALUE_CLASSES = {
     inner: METER_CLASS_PREFIX + 'inner-element',
@@ -47,175 +37,129 @@
   METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] = METER_CLASS_PREFIX + 'suboptimum-value';
   METER_VALUE_CLASSES[LEVEL_SUBSUBOPTIMUM] = METER_CLASS_PREFIX + 'even-less-good-value';
 
+  var PROP_MIN = 'min';
+  var PROP_MAX = 'max';
+  var PROP_LOW = 'low';
+  var PROP_HIGH = 'high';
+  var PROP_VALUE = 'value';
+  var PROP_OPTIMUM = 'optimum';
+
+  var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_OPTIMUM, PROP_VALUE];
+
+  var METHOD_CREATE_ELEMENT = 'createElement';
+
   var METER_INITAL_VALUES = {
     min: 0,
-    max: 1,
-    low: 0,
-    high: 1
+    max: 1
   };
 
-  var NOOP = function() {};
-
-  var meterPolyfill = {
-    CLASSES: METER_VALUE_CLASSES,
-    INITAL_VALUES: METER_INITAL_VALUES,
-    LEVEL_SUBOPTIMUM: LEVEL_SUBOPTIMUM,
-    LEVEL_OPTIMUM: LEVEL_OPTIMUM,
-    LEVEL_SUBSUBOPTIMUM: LEVEL_SUBSUBOPTIMUM,
-    polyfill: NOOP
-  };
-
-  if (!Function.prototype.bind) {
-    Function.prototype.bind = function(self) {
-      var fn = this;
-      return function() {
-        return fn.apply(self, arguments);
-      };
-    };
-  }
-
-  var document = window.document;
-  var documentElement = document.documentElement;
-  // ie 8. document.createElement is not a function
-  var createElement = Function.prototype.bind.call(document[DOCUMENT_CREAMENT_METHOD], document);
-
-  function createNativeFunction(fnName, fn) {
-    function toString() {
-      return 'function ' + fnName + '() { [native code] }';
-    }
-
-    var nativeToString = toString.toString.toString;
-
-    // firfox shows bound toString in console not bug
-    // ie7/8 is buggy without bind
-    toString.toString = nativeToString.bind(nativeToString);
-    // some browsers shows empty function name in toString.toString.toString
-    toString.toString.toString = toString.toString;
-
-    fn.toString = toString;
-    return fn;
-  }
-
-  var meterElement = createElement(METER_TAG);
-
-  var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
-    function HTMLMeterElement() {
-      throw new TypeError('Illegal constructor');
-    }
-
-    // ie 8 constructor is null
-    var prototype = (
-      window.HTMLElement ||
-      meterElement.constructor ||
-      window.Element ||
-      window.Node ||
-      function() {}).prototype;
-
-    if (Object.create) {
-      prototype = Object.create(prototype);
-    }
-
-    HTMLMeterElement.prototype = prototype;
-
-    var nativeFn = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, HTMLMeterElement);
-    nativeFn.constructor = nativeFn.prototype.constructor = nativeFn;
-    return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = nativeFn;
-  })();
-
-  // there is no moz/ms/o vendor prefix
-  var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-  var isObservered = false;
-  var isReady = false;
   // TODO:
   // use getComputedStyle find the right calculator
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
-  function isUndefined(obj) {
-    return typeof obj === 'undefined';
-  }
+  var document = window.document;
+
+  var meterElement = document[METHOD_CREATE_ELEMENT](METER_TAG);
+  var nativeSupport = meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX];
 
   function isMeter(el) {
     return el && el.tagName && el.tagName.toUpperCase() === METER_TAG;
   }
 
-  function fixProps(meter, props) {
-    var isMeterElement = isMeter(meter);
-    // must has a min/max value
-    each([PROP_MIN, PROP_MAX], function(prop) {
-      var value = +meter[prop];
-      if (isNaN(value)) {
-        meter[prop] = METER_INITAL_VALUES[prop];
-      }
-    });
-    each(props || METER_PROPS, function(prop) {
-      switch (prop) {
-        case PROP_MAX:
-          if (meter[PROP_MAX] < meter[PROP_MIN]) {
-            meter[PROP_MAX] = meter[PROP_MIN];
-          }
-          break;
-        case PROP_LOW:
-          if (meter[PROP_LOW] < meter[PROP_MIN]) {
-            meter[PROP_LOW] = meter[PROP_MIN];
-          }
-          if (!isMeterElement && isUndefined(meter[PROP_LOW])) {
-            meter[PROP_LOW] = meter[PROP_MIN];
-          }
-          break;
-        case PROP_HIGH:
-          if (meter[PROP_HIGH] > meter[PROP_MAX]) {
-            meter[PROP_HIGH] = meter[PROP_MAX];
-          }
-          if (meter[PROP_HIGH] < meter[PROP_LOW]) {
-            meter[PROP_HIGH] = meter[PROP_LOW];
-          }
-          if (!isMeterElement && isUndefined(meter[PROP_HIGH])) {
-            meter[PROP_HIGH] = meter[PROP_MAX];
-          }
-          break;
-        case PROP_VALUE:
-          if (isMeterElement && isUndefined(meter[PROP_VALUE])) {
-            meter.removeAttribute(PROP_VALUE);
-          } else {
-            if (
-              (meter[PROP_VALUE] < meter[PROP_MIN]) ||
-              (typeof meter[PROP_VALUE] === 'undefined')
-            ) {
-              meter[PROP_VALUE] = meter[PROP_MIN];
-            }
-            if (meter[PROP_VALUE] > meter[PROP_MAX]) {
-              meter[PROP_VALUE] = meter[PROP_MAX];
-            }
-          }
-          break;
-        case PROP_OPTIMUM:
-          if (
-            isUndefined(meter[PROP_OPTIMUM]) ||
-            (meter[PROP_OPTIMUM] < meter[PROP_MIN] || meter[PROP_OPTIMUM] > meter[PROP_MAX])
-          ) {
-            if (isMeterElement) {
-              meter.removeAttribute(PROP_OPTIMUM);
-            } else {
-              meter[PROP_OPTIMUM] = meter[PROP_MIN] + (meter[PROP_MAX] - meter[PROP_MIN]) / 2;
-            }
-          }
-          break;
-        default:
-          break;
-      }
-    });
-    return meter;
+  function each(arrLike, fn) {
+    var i = 0;
+    var len = arrLike.length;
+    for (; i < len; i++) {
+      fn(arrLike[i], i);
+    }
   }
 
-  function calcLevel(props) {
-    props = fixProps(props);
+  function isUndefined(obj) {
+    return typeof obj === 'undefined';
+  }
 
-    var min = props[PROP_MIN];
-    var max = props[PROP_MAX];
-    var low = props[PROP_LOW];
-    var high = props[PROP_HIGH];
-    var optimum = props[PROP_OPTIMUM];
-    var value = props[PROP_VALUE];
+  function isVoidValue(obj) {
+    var floatValue = parseFloat(obj);
+    return isUndefined(obj) || isNaN(floatValue) || !isFinite(floatValue);
+  }
+
+  function getPropValue(meter, prop) {
+    var value = meter[prop];
+    var isNull = value === null;
+    var min;
+    var max;
+    var low;
+    value = parseFloat(value);
+    switch (prop) {
+      case PROP_MIN:
+        value = isNull ?
+          METER_INITAL_VALUES[PROP_MIN] :
+          value;
+        break;
+      case PROP_MAX:
+        min = getPropValue(meter, PROP_MIN);
+        value = isNull ?
+          mathMax(min, METER_INITAL_VALUES[PROP_MAX]) :
+          mathMax(min, value);
+        break;
+      case PROP_LOW:
+        min = getPropValue(meter, PROP_MIN);
+        max = getPropValue(meter, PROP_MAX);
+        value = isNull ?
+          min :
+          mathMin(mathMax(min, value), max);
+        break;
+      case PROP_HIGH:
+        max = getPropValue(meter, PROP_MAX);
+        low = getPropValue(meter, PROP_LOW);
+        value = isNull ?
+          max :
+          mathMin(mathMax(low, value), max);
+        break;
+      case PROP_OPTIMUM:
+        min = getPropValue(meter, PROP_MIN);
+        max = getPropValue(meter, PROP_MAX);
+        value = isNull ?
+          (max - min) / 2 + min :
+          mathMin(mathMax(min, value), max);
+        break;
+      case PROP_VALUE:
+        min = getPropValue(meter, PROP_MIN);
+        max = getPropValue(meter, PROP_MAX);
+        value = isNull ?
+          min :
+          mathMin(mathMax(min, value), max);
+        break;
+    }
+    return value;
+  }
+
+  function fixProps(propValues) {
+    each(METER_PROPS, function(prop) {
+      var value = propValues[prop];
+      if (isVoidValue(value)) {
+        value = null;
+      }
+      if (propValues[prop] !== value) {
+        propValues[prop] = value;
+      }
+    });
+    return propValues;
+  }
+
+  function calcLevel(meter) {
+    var propValues = {};
+    each(METER_PROPS, function(prop) {
+      propValues[prop] = meter[prop];
+    });
+    propValues = fixProps(propValues);
+
+    var min = getPropValue(propValues, PROP_MIN);
+    var max = getPropValue(propValues, PROP_MAX);
+    var low = getPropValue(propValues, PROP_LOW);
+    var high = getPropValue(propValues, PROP_HIGH);
+    var optimum = getPropValue(propValues, PROP_OPTIMUM);
+    var value = getPropValue(propValues, PROP_VALUE);
 
     var percentage = min === max ? 0 : (value - min) / (max - min) * 100;
     var level = LEVEL_OPTIMUM;
@@ -254,20 +198,19 @@
       }
     }
 
-    // firefox show diffently from chrome when
-    // value === high/low && min === max
-    if (isFirefox && min === max) {
-      percentage = 100;
-    }
+    // firefox show diffently from chrome
+    // when value === high/low or min === max
+    if (isFirefox) {
+      if (min === max) {
+        percentage = 100;
+      }
 
-
-    if (isFirefox &&
-      (
-        (optimum > high && value === high) ||
-        (optimum < low && value === low)
-      )
-     ) {
-      level = LEVEL_SUBOPTIMUM;
+      if (
+          (optimum > high && value === high) ||
+          (optimum < low && value === low)
+       ) {
+        level = LEVEL_SUBOPTIMUM;
+      }
     }
 
     return {
@@ -277,17 +220,142 @@
     };
   }
 
-  meterPolyfill.fix = fixProps;
-  meterPolyfill.calc = calcLevel;
+  var meterPolyfill = {
+    CLASSES: METER_VALUE_CLASSES,
+    LEVEL_SUBOPTIMUM: LEVEL_SUBOPTIMUM,
+    LEVEL_OPTIMUM: LEVEL_OPTIMUM,
+    LEVEL_SUBSUBOPTIMUM: LEVEL_SUBSUBOPTIMUM,
+    calc: calcLevel,
+    polyfill: NOOP
+  };
 
-  if (meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX]) {
+  if (nativeSupport) {
     return meterPolyfill;
   }
 
+  /* polyfill starts */
 
-  meterElement[METER_TAG] = METER_TAG;
+  var documentElement = document.documentElement;
+
+  var defineProperty;
+  if(Object.defineProperty) {
+    defineProperty = function(o, property, etters) {
+      etters.enumerable = true;
+      etters.configurable = true;
+
+      try {
+        Object.defineProperty(o, property, etters);
+      } catch(e) {
+        if(e.number === -0x7FF5EC54) {
+          etters.enumerable = false;
+          Object.defineProperty(o, property, etters);
+        }
+      }
+    };
+  } else {
+    if ('__defineSetter__' in documentElement) {
+      defineProperty = function(o, property, etters) {
+        if (etters.get) {
+          o.__defineGetter__(property, etters.get);
+        }
+        if(etters.set) {
+          o.__defineSetter__(property, etters.set);
+        }
+      };
+    } else {
+      defineProperty = function(o, property, etters) {
+        if (etters.get) {
+          o[property] = etters.get.call(o);
+        }
+      };
+    }
+  }
+
+  // https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+  var bind = Function.prototype.bind || function(oThis) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    var fnToBind = this;
+    var NOOP = function() {};
+    var fnBound = function() {
+        return fnToBind.apply(
+          this instanceof NOOP ? this : oThis || this,
+          args.concat(Array.prototype.slice.call(arguments))
+          );
+    };
+
+    NOOP.prototype = this.prototype || NOOP.prototype;
+    fnBound.prototype = new NOOP();
+
+    return fnBound;
+  };
+
+  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
+    'HTML',
+    METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
+        return $1.toUpperCase() + $2.toLowerCase()
+    }),
+    'Element'
+  ].join('');
+
+  function createNativeFunction(fnName, fn) {
+    function toString() {
+      return 'function ' + fnName + '() { [native code] }';
+    }
+
+    var nativeToString = toString.toString.toString;
+
+    // firfox shows bound toString in console not bug
+    // ie7/8 is buggy without bind
+    toString.toString = bind.call(nativeToString, nativeToString);
+    // some browsers shows empty function name in toString.toString.toString
+    toString.toString.toString = toString.toString;
+
+    fn.toString = toString;
+    return fn;
+  }
+
+  // ie 8 document.createElement is not a function
+  // ie 7 document.createElement.apply is undefined
+  var createElement = (function(createElement) {
+    if (!createElement.apply) {
+      return createElement;
+    } else {
+      return function() {
+        return createElement.apply(document, arguments);
+      };
+    }
+  })(document[METHOD_CREATE_ELEMENT]);
+
+  var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
+    var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function () {
+      throw new TypeError('Illegal constructor');
+    });
+
+    // ie 8 constructor is null
+    var prototype = (
+      window.HTMLElement ||
+      meterElement.constructor ||
+      window.Element ||
+      window.Node ||
+      NOOP).prototype;
+
+    if (Object.create) {
+      prototype = Object.create(prototype);
+    }
+
+    HTMLMeterElement.prototype = prototype;
+    HTMLMeterElement.constructor = HTMLMeterElement.prototype.constructor = HTMLMeterElement;
+
+    return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = HTMLMeterElement;
+  })();
+
+  // there is no moz/ms/o vendor prefix
+  var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+  var isObservered = false;
+  var isReady = false;
+
+  meterElement[METER_TAG] = METER_TAG; // for attersAsProps test
   var supports = {
-    native: meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX],
     MutationObserver: !!MutationObserver,
     addEventListener: !!window.addEventListener,
     attachEvent: !!window.attachEvent,
@@ -298,6 +366,9 @@
   };
 
   function on(el, events, listener, useCapture) {
+    if (!el) {
+      return;
+    }
     each(events.split(' '), function(event) {
       if (supports.addEventListener) {
         el.addEventListener(event, listener, !!useCapture);
@@ -338,18 +409,9 @@
     '</div>'
   ].join('');
 
-  var min = Math[PROP_MIN];
-  var max = Math[PROP_MAX];
+  var mathMin = Math[PROP_MIN];
+  var mathMax = Math[PROP_MAX];
   var setTimeout = window.setTimeout;
-
-
-  // help functions
-
-  function each(arrLike, fn) {
-    for (var i = 0, len = arrLike.length; i < len; i++) {
-      fn(arrLike[i], i);
-    }
-  }
 
   function hasAttribute(el, name) {
     if (supports.hasAttribute) {
@@ -359,123 +421,34 @@
     }
   }
 
-  function createShadow(meter) {
-    if (supports.native || !isMeter(meter) || hasAttribute(meter, '_polyfill')) {
-      return meter;
-    }
-
-    meter.innerHTML = METER_SHADOW_HTML;
-    meter.setAttribute('_polyfill', '');
-
-    // meter.__proto__ = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME].prototype;
-    fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE]);
-
-    // observe subtree
-    if (supports.MutationObserver) {
-      var observer = new MutationObserver(function(mutations) {
-        each(mutations, function(mutation) {
-          updateMeterStyle(mutation.target);
-        });
-      });
-      observer.observe(meter, {
-        attributes: true,
-        attributeFilter: METER_PROPS
-      });
-    } else if (supports.DOMNodeInserted) {
-      on(meter, 'DOMAttrModified', function(e) {
-        if (METER_PROPS.join(' ').indexOf(e.attrName) > -1) {
-          updateMeterStyle(e.target);
-        }
-      });
-    } else if (supports.propertychange) {
-      on(meter, 'propertychange', function(e) {
-        // console.log('propertychange');
-        // console.log(e);
-      });
-    } else {
-      // anything ?
-    }
-    updateMeterStyle(meter);
-    return meter;
-  }
-
-  function setMeterAttribute(meter, attr, value) {
-    switch (attr) {
-      case PROP_MIN:
-        meter.setAttribute(attr, value);
-        fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM]);
-        break;
-      case PROP_MAX:
-        value = max(value, meter[PROP_MIN]);
-        meter.setAttribute(attr, value);
-        fixProps(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM]);
-        break;
-      case PROP_LOW:
-        value = min(max(value, meter[PROP_MIN]), meter[PROP_MAX]);
-        meter.setAttribute(attr, value);
-        fixProps(meter, [PROP_HIGH]);
-        break;
-      case PROP_HIGH:
-        value = min(max(value, meter[PROP_MIN], meter[PROP_LOW]), meter[PROP_MAX]);
-        meter.setAttribute(attr, value);
-        break;
-      case PROP_OPTIMUM:
-        value = min(max(value, meter[PROP_MIN]), meter[PROP_MAX]);
-        meter.setAttribute(attr, value);
-        break;
-      default:
-        meter.setAttribute(attr, value);
-    }
-    updateMeterStyle(meter);
-  }
-
   function updateMeterStyle(meter) {
-    if (supports.native) {
-      return;
-    }
+    var level = calcLevel(meter);
 
-    if (!hasAttribute(meter, '_polyfill')) {
-      return createShadow(meter);
-    }
-    var innerDivs = meter.getElementsByTagName('div');
-    if (!innerDivs.length || !innerDivs[2]) {
-      throw new Error(METER_TAG + ' polyfilled shadow dom is not currect.');
-    }
-    var valueElement = innerDivs[2];
-
-    var props = {};
-    each(METER_PROPS, function(prop) {
-      if (supports.unknownElement) {
-        props[prop] = +meter[prop];
-      } else if (hasAttribute(meter, prop)) {
-        props[prop] = +meter.getAttribute(prop);
-      } else {
-        props[prop] = METER_INITAL_VALUES[prop];
-      }
-    });
-
-    var level = calcLevel(props);
-    valueElement.className = level.className;
-    valueElement.style.width = level.percentage + '%';
+    try {
+      var valueElement = meter.getElementsByTagName('div')[2];
+      valueElement.className = level.className;
+      valueElement.style.width = level.percentage + '%';
+    } catch(_) {}
 
     return meter;
   }
+
+  // over write document.createElement
+  function documentCreateElemennt() {
+    var el = createElement.apply ? createElement.apply(document, arguments) : createElement(arguments[0]);
+    if (isMeter(el)) {
+      polyfill(el);
+    }
+    return el;
+  }
+  document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, documentCreateElemennt);
+
+  // maybe also cloneNode ??
 
   function observerSubtree() {
-    if (supports.native || isObservered) {
+    if (isObservered) {
       return;
     }
-
-    // over write document.createElement
-    function documentCreateElemennt(tagName) {
-      var el = createElement.apply(document, arguments);
-      if (isMeter(el)) {
-        polyfill(el);
-      }
-      return el;
-    }
-    document[DOCUMENT_CREAMENT_METHOD] = createNativeFunction([DOCUMENT_CREAMENT_METHOD], documentCreateElemennt);
-
 
     // observe subtree
     if (supports.MutationObserver) {
@@ -500,79 +473,169 @@
   }
 
   function polyfill(context) {
-    if (supports.native) {
-      return;
-    }
-
     var meters = [];
     if (isMeter(context)) {
       meters = [context];
     } else {
-      meters = (context || documentElement).getElementsByTagName(METER_TAG);
+      meters = (context || document).getElementsByTagName(METER_TAG);
     }
 
     each(meters, function(meter) {
+      if (meter['_polyfill']) {
+        return;
+      }
+
+      if (!hasAttribute(meter, '_polyfill')) {
+        meter.setAttribute('_polyfill', '');
+
+        // ie 8 throws
+        try {
+          meter.constructor = HTMLMeterElement;
+        } catch(_) {}
+
+        // ie8 need clone meter might be a new node
+        meter = createShadowDom(meter);
+        defineEtter(meter);
+        observerAttr(meter);
+      }
+
       updateMeterStyle(meter);
+      meter['_polyfill'] = true;
     });
   }
 
-  (function pollyfillGetterSetter() {
-    if (!supports.unknownElement) {
-      return;
-    }
-
-    var prototype = meterElement.constructor.prototype;
-    function getSetter(prop) {
-      return function(value) {
-        if(!supports.attersAsProps && isMeter(this)) {
-          setMeterAttribute(this, prop.toLowerCase(), +value);
+  function observerAttr(meter) {
+    // observe subtree
+    if (supports.MutationObserver) {
+      var observer = new MutationObserver(function(mutations) {
+        each(mutations, function(mutation) {
+          updateMeterStyle(mutation.target);
+        });
+      });
+      observer.observe(meter, {
+        attributes: true,
+        attributeFilter: METER_PROPS
+      });
+    } else if (supports.DOMAttrModified) {
+      on(meter, 'DOMAttrModified', function(e) {
+        if (METER_PROPS.join(' ').indexOf(e.attrName) > -1) {
+          updateMeterStyle(e.target);
         }
-      };
+      });
+    } else if (supports.propertychange) {
+      on(meter, 'propertychange', function(e) {
+        if (METER_PROPS.join(' ').indexOf(e.propertyName) > -1) {updateMeterStyle(e.srcElement);
+        }
+      });
+    } else {
+      // anything ?
     }
+  }
+
+  function createShadowDom(meter) {
+    if (meter.canHaveChildren == false || meter.canHaveHTML == false) {
+      // ie 8 fails on innerHTML meter
+      var parent = meter.parentNode;
+      if (parent) {
+        var meterClone = createElement(METER_TAG);
+        each(METER_PROPS, function(prop) {
+          var value = meter[prop];
+          if (!isVoidValue(value)) {
+            meterClone[prop] = meter[prop];
+          }
+        });
+        parent.replaceChild(meterClone, meter);
+        meterClone.innerHTML = METER_SHADOW_HTML;
+        meter = meterClone;
+
+        // remove </meter><//meter>
+        var slashMeters = parent.getElementsByTagName('/' + METER_TAG);
+        each(slashMeters, function(slashMeter) {
+          parent.removeChild(slashMeter);
+        });
+        // anotherway remove </meter><//meter>
+        // var next = meter;
+        // while (next = next.nextSibling) {
+        //   if (next.tagName.toUpperCase() === '/' + METER_TAG) {
+        //     parent.removeChild(next);
+        //   }
+        // }
+      }
+    } else {
+      meter.innerHTML = METER_SHADOW_HTML;
+    }
+    return meter;
+  }
+
+  function defineEtter(meter) {
+    var METHOD_SET_ATTRIBUTE = 'setAttribute';
+    var METHOD_CLONE_NODE = 'cloneNode';
+    var propValues = {};
+    var setAttribute = bind.call(meter[METHOD_SET_ATTRIBUTE], meter);
+    var cloneNode = bind.call(meter[METHOD_CLONE_NODE], meter);
+
+    each(METER_PROPS, function(prop) {
+      propValues[prop] = meter.getAttribute(prop);
+    });
+
+    propValues = fixProps(propValues);
 
     function getGetter(prop) {
       return function() {
-        if (isMeter(this)) {
-          if (hasAttribute(this, prop)) {
-            return +this.getAttribute(prop);
-          } else if (prop === PROP_LOW) {
-            return this[PROP_MIN];
-          } else if (prop === PROP_HIGH) {
-            return this[PROP_MAX];
-          } else if (prop === PROP_OPTIMUM) {
-            return (this[PROP_MAX] - this[PROP_MIN]) / 2 + this[PROP_MIN];
-          } else if (prop === PROP_VALUE) {
-            return this[PROP_MIN];
-          }
-          return METER_INITAL_VALUES[prop];
-        }
-
-        return this.getAttribute(prop);
+        return getPropValue(propValues, prop);
       };
     }
 
+    function getSetter(prop) {
+      return function(value) {
+        if (isVoidValue(value)) {
+          throw new TypeError('Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.');
+        }
+
+        setAttribute(prop, '' + meter[prop]);
+
+        propValues[prop] = value === null ? null : value;
+        updateMeterStyle(meter);
+        return value;
+      }
+    }
+
     each(METER_PROPS, function(prop) {
-      Object.defineProperty(prototype, prop, {
-        // enumerable: true, // can't do this on ie8
-        // configurable: true
-        set: getSetter(prop),
+      var etters = {
         get: getGetter(prop)
+      };
+      if (!supports.attersAsProps) {
+        etters.set = getSetter(prop);
+      }
+      defineProperty(meter, prop, etters);
+    });
+
+    var attributeSetter = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
+      setAttribute(attr, value);
+      attr = attr.toLowerCase();
+      each(METER_PROPS, function(prop) {
+        if (prop === attr) {
+          propValues[prop] = isVoidValue(value) || value === null ? null : value;
+          updateMeterStyle(meter);
+        }
       });
     });
 
-    // ie 8
-    // var setAttribute = prototype.setAttribute;
-    // console.log(setAttribute);
-    // Object.defineProperty(prototype, 'setAttribute', {
-    //   value: function(prop, value) {
-    //     this[prop] = value;
-    //     if (isMeter(this)) {
-    //       console.log('update');
-    //       updateMeterStyle(this);
-    //     }
-    //   }
-    // });
-  })();
+    defineProperty(meter, METHOD_SET_ATTRIBUTE, {
+      value: attributeSetter
+    });
+
+    var cloneNodeMethd = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
+      var clone = cloneNode(false);
+      clone.removeAttribute('_polyfill');
+      polyfill(clone);
+      return clone;
+    });
+
+    defineProperty(meter, METHOD_CLONE_NODE, {
+      value: cloneNodeMethd
+    });
+  }
 
   (function checkReady() {
 
@@ -620,9 +683,6 @@
     }
   })();
 
-
   meterPolyfill.polyfill = polyfill;
-
   return meterPolyfill;
-
 });
