@@ -72,7 +72,8 @@
   }
 
   function isVoidValue(obj) {
-    return isUndefined(obj) || isNaN(+obj) || !isFinite(+obj);
+    var floatValue = parseFloat(obj);
+    return isUndefined(obj) || isNaN(floatValue) || !isFinite(floatValue);
   }
 
   function getPropValue(meter, prop) {
@@ -225,7 +226,9 @@
     return meterPolyfill;
   }
 
-  // polyfill
+  /* polyfill starts */
+
+  var documentElement = document.documentElement;
 
   var defineProperty;
   if(Object.defineProperty) {
@@ -254,17 +257,29 @@
       };
     } else {
       defineProperty = function(o, property, etters) {
-        o[property] = etters.get.call(o);
+        if (etters.get) {
+          o[property] = etters.get.call(o);
+        }
       };
     }
   }
 
+  // https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
   var bind = Function.prototype.bind || function(oThis) {
-    var fn = this;
     var args = Array.prototype.slice.call(arguments, 1);
-    return function() {
-      return fn.apply(oThis, args.concat(Array.prototype.slice.call(arguments)));
+    var fnToBind = this;
+    var NOOP = function() {};
+    var fnBound = function() {
+        return fnToBind.apply(
+          this instanceof NOOP ? this : oThis || this,
+          args.concat(Array.prototype.slice.call(arguments))
+          );
     };
+
+    NOOP.prototype = this.prototype || NOOP.prototype;
+    fnBound.prototype = new NOOP();
+
+    return fnBound;
   };
 
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
@@ -292,9 +307,17 @@
     return fn;
   }
 
-  var documentElement = document.documentElement;
-  // ie 8. document.createElement is not a function
-  var createElement = bind.call(document[METHOD_CREATE_ELEMENT], document);
+  // ie 8 document.createElement is not a function
+  // ie 7 document.createElement.apply is undefined
+  var createElement = (function(createElement) {
+    if (!createElement.apply) {
+      return createElement;
+    } else {
+      return function() {
+        return createElement.apply(document, arguments);
+      };
+    }
+  })(document[METHOD_CREATE_ELEMENT]);
 
   var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
     var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function () {
@@ -405,7 +428,7 @@
 
   // over write document.createElement
   function documentCreateElemennt() {
-    var el = createElement.apply(document, arguments);
+    var el = createElement.apply ? createElement.apply(document, arguments) : createElement(arguments[0]);
     if (isMeter(el)) {
       polyfill(el);
     }
@@ -443,12 +466,11 @@
   }
 
   function polyfill(context) {
-
     var meters = [];
     if (isMeter(context)) {
       meters = [context];
     } else {
-      meters = (context || documentElement).getElementsByTagName(METER_TAG);
+      meters = (context || document).getElementsByTagName(METER_TAG);
     }
 
     each(meters, function(meter) {
@@ -458,8 +480,14 @@
 
       if (!hasAttribute(meter, '_polyfill')) {
         meter.setAttribute('_polyfill', '');
-        meter.constructor = HTMLMeterElement;
-        createShadowDom(meter);
+
+        // ie 8 throws
+        try {
+          meter.constructor = HTMLMeterElement;
+        } catch(_) {}
+
+        // ie8 need clone meter might be a new node
+        meter = createShadowDom(meter);
         defineEtter(meter);
         observerAttr(meter);
       }
@@ -474,7 +502,7 @@
     if (supports.MutationObserver) {
       var observer = new MutationObserver(function(mutations) {
         each(mutations, function(mutation) {
-          polyfill(mutation.target);
+          updateMeterStyle(mutation.target);
         });
       });
       observer.observe(meter, {
@@ -484,13 +512,13 @@
     } else if (supports.DOMAttrModified) {
       on(meter, 'DOMAttrModified', function(e) {
         if (METER_PROPS.join(' ').indexOf(e.attrName) > -1) {
-          polyfill(e.target);
+          updateMeterStyle(e.target);
         }
       });
     } else if (supports.propertychange) {
       on(meter, 'propertychange', function(e) {
-        // console.log('propertychange');
-        // console.log(e);
+        if (METER_PROPS.join(' ').indexOf(e.propertyName) > -1) {updateMeterStyle(e.srcElement);
+        }
       });
     } else {
       // anything ?
@@ -498,13 +526,46 @@
   }
 
   function createShadowDom(meter) {
-    meter.innerHTML = METER_SHADOW_HTML;
+    if (meter.canHaveChildren == false || meter.canHaveHTML == false) {
+      // ie 8 fails on innerHTML meter
+      var parent = meter.parentNode;
+      if (parent) {
+        var meterClone = createElement(METER_TAG);
+        each(METER_PROPS, function(prop) {
+          var value = meter[prop];
+          if (!isVoidValue(value)) {
+            meterClone[prop] = meter[prop];
+          }
+        });
+        parent.replaceChild(meterClone, meter);
+        meterClone.innerHTML = METER_SHADOW_HTML;
+        meter = meterClone;
+
+        // remove </meter><//meter>
+        var slashMeters = parent.getElementsByTagName('/' + METER_TAG);
+        each(slashMeters, function(slashMeter) {
+          parent.removeChild(slashMeter);
+        });
+        // anotherway remove </meter><//meter>
+        // var next = meter;
+        // while (next = next.nextSibling) {
+        //   if (next.tagName.toUpperCase() === '/' + METER_TAG) {
+        //     parent.removeChild(next);
+        //   }
+        // }
+      }
+    } else {
+      meter.innerHTML = METER_SHADOW_HTML;
+    }
+    return meter;
   }
 
   function defineEtter(meter) {
     var METHOD_SET_ATTRIBUTE = 'setAttribute';
+    var METHOD_CLONE_NODE = 'cloneNode';
     var propValues = {};
     var setAttribute = bind.call(meter[METHOD_SET_ATTRIBUTE], meter);
+    var cloneNode = bind.call(meter[METHOD_CLONE_NODE], meter);
 
     each(METER_PROPS, function(prop) {
       propValues[prop] = meter.getAttribute(prop);
@@ -533,23 +594,39 @@
     }
 
     each(METER_PROPS, function(prop) {
-      defineProperty(meter, prop, {
-        set: getSetter(prop),
+      var etters = {
         get: getGetter(prop)
+      };
+      if (!supports.attersAsProps) {
+        etters.set = getSetter(prop);
+      }
+      defineProperty(meter, prop, etters);
+    });
+
+    var attributeSetter = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
+      setAttribute(attr, value);
+      attr = attr.toLowerCase();
+      each(METER_PROPS, function(prop) {
+        if (prop === attr) {
+          propValues[prop] = isVoidValue(value) || value === null ? null : value;
+          updateMeterStyle(meter);
+        }
       });
     });
 
     defineProperty(meter, METHOD_SET_ATTRIBUTE, {
-      value: function(attr, value) {
-        setAttribute(attr, value);
-        attr = attr.toLowerCase();
-        each(METER_PROPS, function(prop) {
-          if (prop === attr) {
-            propValues[prop] = isVoidValue(value) || value === null ? null : value;
-            updateMeterStyle(meter);
-          }
-        });
-      }
+      value: attributeSetter
+    });
+
+    var cloneNodeMethd = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
+      var clone = cloneNode(false);
+      clone.removeAttribute('_polyfill');
+      polyfill(clone);
+      return clone;
+    });
+
+    defineProperty(meter, METHOD_CLONE_NODE, {
+      value: cloneNodeMethd
     });
   }
 
@@ -598,7 +675,6 @@
       setTimeout(polyfillWhenReady, 50);
     }
   })();
-
 
   meterPolyfill.polyfill = polyfill;
   return meterPolyfill;

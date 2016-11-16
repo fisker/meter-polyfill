@@ -10,7 +10,8 @@ meter {
   height: 1em;
   width: 5em;
   vertical-align: -0.2em;
-  -moz-user-select: none; }
+  -moz-user-select: none;
+  *text-align: left; }
 
 .meter-inner-element {
   -webkit-appearance: inherit;

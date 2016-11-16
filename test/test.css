@@ -32,7 +32,8 @@ FAKEMETER {
       -ms-user-select: none;
           user-select: none;
   border: 1px solid lightyellow;
-  vertical-align: middle; }
+  vertical-align: middle;
+  *text-align: left; }
 
 table {
   border-collapse: collapse;
