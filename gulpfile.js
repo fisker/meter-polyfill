@@ -72,6 +72,7 @@ gulp.task('scripts:min', function() {
 gulp.task('scripts:release', function() {
   return gulp.src('src/polyfill.js')
     .pipe(replace('<%= METER_TAG %>', 'METER'))
+    .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(rename(pkg.name + '.js'))
     .pipe(header(banner, {pkg}))
     .pipe(gulp.dest('dist'))
@@ -122,6 +123,7 @@ gulp.task('test:scss', function() {
   return gulp.src('src/**/*.scss')
     .pipe(flatten())
     .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+    .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(sass({
       precision: 10,
@@ -137,6 +139,7 @@ gulp.task('test:scss', function() {
 gulp.task('test:misc', function() {
   return gulp.src('src/**/*.{js,html}')
     .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+    .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(flatten())
     .pipe(gulp.dest('test'))
     .pipe(size({title: 'script'}))

@@ -13,6 +13,9 @@
   'use strict';
 
   var METER_TAG = 'FAKEMETER';
+  var VERSION = '1.2.0';
+
+  var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
   var NOOP = function() {};
 
@@ -46,9 +49,7 @@
     max: 1
   };
 
-  // TODO:
-  // use getComputedStyle find the right calculator
-  var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
+  // var PRECISION = isFirefox ? 16 : 6; // firefox and chrome use different precision
 
   var document = window.document;
 
@@ -72,6 +73,9 @@
   }
 
   function isVoidValue(obj) {
+    if (obj === null) {
+      return false;
+    }
     var floatValue = parseFloat(obj);
     return isUndefined(obj) || isNaN(floatValue) || !isFinite(floatValue);
   }
@@ -216,6 +220,7 @@
   }
 
   var meterPolyfill = {
+    version: VERSION,
     CLASSES: METER_VALUE_CLASSES,
     LEVEL_SUBOPTIMUM: LEVEL_SUBOPTIMUM,
     LEVEL_OPTIMUM: LEVEL_OPTIMUM,
@@ -494,11 +499,11 @@
         defineEtter(meter);
         observerAttr(meter);
 
-        meter.setAttribute(POLYFILL_SIGN, '');
+        meter.setAttribute(POLYFILL_SIGN, VERSION);
       }
 
       updateMeterStyle(meter);
-      meter[POLYFILL_SIGN] = true;
+      meter[POLYFILL_SIGN] = VERSION;
     });
   }
 
@@ -589,12 +594,15 @@
     function getSetter(prop) {
       return function(value) {
         if (isVoidValue(value)) {
-          throw new TypeError('Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.');
+          if (isFirefox) {
+            throw new TypeError('Value being assigned to ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.' + prop + ' is not a finite floating-point value.');
+          } else {
+            throw new TypeError('Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.');
+          }
         }
 
-        setAttribute(prop, '' + meter[prop]);
-
-        propValues[prop] = value === null ? null : value;
+        setAttribute(prop, value === null ? '0' : '' + value);
+        propValues[prop] = value === null ? 0 : parseFloat(value);
         updateMeterStyle(meter);
         return value;
       };
