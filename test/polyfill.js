@@ -12,7 +12,6 @@
 })(this, function(window) {
   'use strict';
 
-
   var METER_TAG = 'FAKEMETER';
 
   var NOOP = function() {};
@@ -38,15 +37,13 @@
   var PROP_VALUE = 'value';
   var PROP_OPTIMUM = 'optimum';
 
-  var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM];
+  var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_OPTIMUM, PROP_VALUE];
 
   var DOCUMENT_CREAMENT_METHOD = 'createElement';
 
   var METER_INITAL_VALUES = {
     min: 0,
-    max: 1,
-    low: 0,
-    high: 1
+    max: 1
   };
 
   // TODO:
@@ -58,13 +55,92 @@
   var meterElement = document[DOCUMENT_CREAMENT_METHOD](METER_TAG);
   var nativeSupport = meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX];
 
+  function isMeter(el) {
+    return el && el.tagName && el.tagName.toUpperCase() === METER_TAG;
+  }
+
+  function each(arrLike, fn) {
+    var i = 0;
+    var len = arrLike.length;
+    for (; i < len; i++) {
+      fn(arrLike[i], i);
+    }
+  }
+
+  function isUndefined(obj) {
+    return typeof obj === 'undefined';
+  }
+
+  function isVoidValue(obj) {
+    return obj === null || isUndefined(obj) || isNaN(obj) || !isFinite(obj);
+  }
+
+  function fixValue(meter, prop, value) {
+    if (isUndefined(value)) {
+      value = meter[prop];
+    }
+    var isNull = value === null;
+    switch (prop) {
+      case PROP_MIN:
+        value = isNull ?
+          METER_INITAL_VALUES[PROP_MIN] :
+          value;
+        break;
+      case PROP_MAX:
+        value = isNull ?
+          mathMax(METER_INITAL_VALUES[PROP_MAX], meter[PROP_MIN]) :
+          mathMax(value, meter[PROP_MIN]);
+        break;
+      case PROP_LOW:
+        value = isNull ?
+          meter[PROP_MIN] :
+          mathMin(mathMax(value, meter[PROP_MIN]), meter[PROP_MAX]);
+        break;
+      case PROP_HIGH:
+        value = isNull ?
+          meter[PROP_MAX] :
+          mathMin(mathMax(value, meter[PROP_MIN], meter[PROP_LOW]), meter[PROP_MAX]);
+        break;
+      case PROP_OPTIMUM:
+        value = isNull ?
+          (meter[PROP_MAX] - meter[PROP_MIN]) / 2 + meter[PROP_MIN] :
+          mathMin(mathMax(value, meter[PROP_MIN]), meter[PROP_MAX]);
+        break;
+      case PROP_VALUE:
+        value = isNull ?
+          meter[PROP_MIN] :
+          mathMin(mathMax(value, meter[PROP_MIN]), meter[PROP_MAX]);
+        break;
+    }
+    return value;
+  }
+
+  function fixProps(propValues) {
+    each(METER_PROPS, function(prop) {
+      var value = parseFloat(propValues[prop]);
+      if (isVoidValue(value)) {
+        value = null;
+      }
+      if (propValues[prop] !== value) {
+        propValues[prop] = value;
+      }
+    });
+    return propValues;
+  }
+
   function calcLevel(meter) {
-    var min = meter[PROP_MIN];
-    var max = meter[PROP_MAX];
-    var low = meter[PROP_LOW];
-    var high = meter[PROP_HIGH];
-    var optimum = meter[PROP_OPTIMUM];
-    var value = meter[PROP_VALUE];
+    var propValues = {};
+    each(METER_PROPS, function(prop) {
+      propValues[prop] = meter[prop];
+    });
+    propValues = fixProps(propValues);
+
+    var min = fixValue(propValues, PROP_MIN);
+    var max = fixValue(propValues, PROP_MAX);
+    var low = fixValue(propValues, PROP_LOW);
+    var high = fixValue(propValues, PROP_HIGH);
+    var optimum = fixValue(propValues, PROP_OPTIMUM);
+    var value = fixValue(propValues, PROP_VALUE);
 
     var percentage = min === max ? 0 : (value - min) / (max - min) * 100;
     var level = LEVEL_OPTIMUM;
@@ -140,62 +216,6 @@
 
   // polyfill
 
-  function each(arrLike, fn) {
-    var i = 0;
-    var len = arrLike.length;
-    for (; i < len; i++) {
-      fn(arrLike[i], i);
-    }
-  }
-
-  function isMeter(el) {
-    return el && el.tagName && el.tagName.toUpperCase() === METER_TAG;
-  }
-
-  function isVoidValue(obj) {
-    return obj === null || typeof obj === 'undefined' || isNaN(obj) || !isFinite(obj);
-  }
-
-  function fixProps(meter, props) {
-    each(props || METER_PROPS, function(prop) {
-      switch (prop) {
-        case PROP_MAX:
-          if (meter[PROP_MAX] < meter[PROP_MIN]) {
-            meter[PROP_MAX] = meter[PROP_MIN];
-          }
-          break;
-        case PROP_LOW:
-          if (meter[PROP_LOW] < meter[PROP_MIN]) {
-            meter[PROP_LOW] = meter[PROP_MIN];
-          }
-          break;
-        case PROP_HIGH:
-          if (meter[PROP_HIGH] > meter[PROP_MAX]) {
-            meter[PROP_HIGH] = meter[PROP_MAX];
-          }
-          if (meter[PROP_HIGH] < meter[PROP_LOW]) {
-            meter[PROP_HIGH] = meter[PROP_LOW];
-          }
-          break;
-        case PROP_VALUE:
-          if (meter[PROP_VALUE] < meter[PROP_MIN]) {
-            meter[PROP_VALUE] = meter[PROP_MIN];
-          }
-          if (meter[PROP_VALUE] > meter[PROP_MAX]) {
-            meter[PROP_VALUE] = meter[PROP_MAX];
-          }
-          break;
-        case PROP_OPTIMUM:
-          if (meter[PROP_OPTIMUM] < meter[PROP_MIN] || meter[PROP_OPTIMUM] > meter[PROP_MAX]) {
-            meter[PROP_VALUE] = null;
-          }
-          break;
-        default:
-      }
-    });
-    return meter;
-  }
-
   var defineProperty;
   if(Object.defineProperty) {
     defineProperty = function(o, property, etters) {
@@ -210,7 +230,7 @@
           Object.defineProperty(o, property, etters);
         }
       }
-    }
+    };
   } else {
     if ('__defineSetter__' in documentElement) {
       defineProperty = function(o, property, etters) {
@@ -228,6 +248,14 @@
     }
   }
 
+  var bind = Function.prototype.bind || function(oThis) {
+    var fn = this;
+    var args = Array.prototype.slice.call(arguments, 1);
+    return function() {
+      return fn.apply(oThis, args.concat(Array.prototype.slice.call(arguments)));
+    };
+  };
+
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
     'HTML',
     METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
@@ -235,16 +263,6 @@
     }),
     'Element'
   ].join('');
-
-  if (!Function.prototype.bind) {
-    Function.prototype.bind = function(oThis) {
-      var fn = this;
-      var args = Array.prototype.slice.call(arguments, 1);
-      return function() {
-        return fn.apply(oThis, args.concat(Array.prototype.slice.call(arguments)));
-      };
-    };
-  }
 
   function createNativeFunction(fnName, fn) {
     function toString() {
@@ -255,7 +273,7 @@
 
     // firfox shows bound toString in console not bug
     // ie7/8 is buggy without bind
-    toString.toString = nativeToString.bind(nativeToString);
+    toString.toString = bind.call(nativeToString, nativeToString);
     // some browsers shows empty function name in toString.toString.toString
     toString.toString.toString = toString.toString;
 
@@ -265,7 +283,7 @@
 
   var documentElement = document.documentElement;
   // ie 8. document.createElement is not a function
-  var createElement = Function.prototype.bind.call(document[DOCUMENT_CREAMENT_METHOD], document);
+  var createElement = bind.call(document[DOCUMENT_CREAMENT_METHOD], document);
 
   var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
     var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function () {
@@ -363,27 +381,13 @@
   }
 
   function updateMeterStyle(meter) {
+    var level = calcLevel(meter);
 
-    var innerDivs = meter.getElementsByTagName('div');
-    if (!innerDivs.length || !innerDivs[2]) {
-      throw new Error(METER_TAG + ' polyfilled shadow dom is not currect.');
-    }
-    var valueElement = innerDivs[2];
-
-    var props = {};
-    each(METER_PROPS, function(prop) {
-      if (supports.unknownElement) {
-        props[prop] = +meter[prop];
-      } else if (hasAttribute(meter, prop)) {
-        props[prop] = +meter.getAttribute(prop);
-      } else {
-        props[prop] = METER_INITAL_VALUES[prop];
-      }
-    });
-
-    var level = calcLevel(props);
-    valueElement.className = level.className;
-    valueElement.style.width = level.percentage + '%';
+    try {
+      var valueElement = meter.getElementsByTagName('div')[2];
+      valueElement.className = level.className;
+      valueElement.style.width = level.percentage + '%';
+    } catch(_) {}
 
     return meter;
   }
@@ -396,7 +400,7 @@
     }
     return el;
   }
-  document[DOCUMENT_CREAMENT_METHOD] = createNativeFunction([DOCUMENT_CREAMENT_METHOD], documentCreateElemennt);
+  document[DOCUMENT_CREAMENT_METHOD] = createNativeFunction(DOCUMENT_CREAMENT_METHOD, documentCreateElemennt);
 
   // maybe also cloneNode ??
 
@@ -487,110 +491,31 @@
   }
 
   function defineEtter(meter) {
-    var _props = {};
+    var propValues = {};
 
     each(METER_PROPS, function(prop) {
-      var attrValue = parseFloat(meter.getAttribute(prop));
-      if (!isVoidValue(attrValue)) {
-        _props[prop] = attrValue;
-      } else if (prop === PROP_MIN) {
-        _props[prop] = METER_INITAL_VALUES[PROP_MIN];
-      }
+      propValues[prop] = meter.getAttribute(prop);
     });
 
-    fixProps(_props, METER_PROPS);
+    propValues = fixProps(propValues);
 
     function getGetter(prop) {
       return function() {
-        var value = _props[prop];
-
-        if (!isVoidValue(value)) {
-          return value;
-        }
-
-        switch (prop) {
-          case PROP_MIN:
-            return !isVoidValue(value) ? value : METER_INITAL_VALUES[PROP_MIN];
-            break;
-          case PROP_MAX:
-            if (!isVoidValue(value)) {
-              return mathMax(value, meter[PROP_MIN]);
-            } else {
-              return mathMax(METER_INITAL_VALUES[PROP_MAX], meter[PROP_MIN]);
-            }
-            break;
-          case PROP_LOW:
-            if (!isVoidValue(value)) {
-              return mathMin(mathMax(value, this[PROP_MIN]), this[PROP_MAX]);
-            } else {
-              return meter[PROP_MIN];
-            }
-            break;
-          case PROP_HIGH:
-            if (!isVoidValue(value)) {
-              return mathMin(mathMax(value, this[PROP_MIN]), this[PROP_MAX]);
-            } else {
-              return meter[PROP_MAX];
-            }
-            break;
-          case PROP_OPTIMUM:
-            if (!isVoidValue(value)) {
-              return mathMin(mathMax(value, this[PROP_MIN]), this[PROP_MAX]);
-            } else {
-              return (meter[PROP_MAX] - this[PROP_MIN]) / 2 + meter[PROP_MIN];
-            }
-            break;
-          case PROP_VALUE:
-            if (!isVoidValue(value)) {
-              return mathMin(mathMax(value, this[PROP_MIN]), this[PROP_MAX]);
-            } else {
-              return meter[PROP_MIN];
-            }
-            break;
-        }
+        return fixValue(meter, prop, propValues[prop]);
       };
     }
 
     function getSetter(prop) {
       return function(value) {
         if (value === null) {
-          return _props[prop] = value;
+          return propValues[prop] = value;
         }
 
-        if (isVoidValue(value)) {
+        if (isVoidValue(parseFloat(value))) {
           throw new TypeError('Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.');
         }
 
-        value = +value;
-
-        switch (prop) {
-          case PROP_MIN:
-            _props[prop] = value;
-            fixProps(meter, [PROP_MAX, PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM]);
-            break;
-          case PROP_MAX:
-            value = mathMax(value, this[PROP_MIN]);
-            _props[prop] = value;
-            fixProps(meter, [PROP_LOW, PROP_HIGH, PROP_VALUE, PROP_OPTIMUM]);
-            break;
-          case PROP_LOW:
-            value = mathMin(mathMax(value, this[PROP_MIN]), this[PROP_MAX]);
-            _props[prop] = value;
-            fixProps(meter, [PROP_HIGH]);
-            break;
-          case PROP_HIGH:
-            value = mathMin(mathMax(value, this[PROP_MIN], this[PROP_LOW]), this[PROP_MAX]);
-            _props[prop] = value;
-            break;
-          case PROP_OPTIMUM:
-            value = mathMin(mathMax(value, this[PROP_MIN]), this[PROP_MAX]);
-            _props[prop] = value;
-            break;
-          case PROP_VALUE:
-            value = mathMin(mathMax(value, this[PROP_MIN]), this[PROP_MAX]);
-            _props[prop] = value;
-            break;
-        }
+        propValues[prop] = parseFloat(value);
         updateMeterStyle(this);
         return value;
       }
@@ -654,7 +579,5 @@
 
 
   meterPolyfill.polyfill = polyfill;
-
   return meterPolyfill;
-
 });
