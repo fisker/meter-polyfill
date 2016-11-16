@@ -130,6 +130,8 @@
           min :
           mathMin(mathMax(min, value), max);
         break;
+      default:
+        break;
     }
     return value;
   }
@@ -235,18 +237,20 @@
 
   /* polyfill starts */
 
+  var POLYFILL_SIGN = '_polyfill';
+
   var documentElement = document.documentElement;
 
   var defineProperty;
-  if(Object.defineProperty) {
+  if (Object.defineProperty) {
     defineProperty = function(o, property, etters) {
       etters.enumerable = true;
       etters.configurable = true;
 
       try {
         Object.defineProperty(o, property, etters);
-      } catch(e) {
-        if(e.number === -0x7FF5EC54) {
+      } catch (e) {
+        if (e.number === -0x7FF5EC54) {
           etters.enumerable = false;
           Object.defineProperty(o, property, etters);
         }
@@ -258,7 +262,7 @@
         if (etters.get) {
           o.__defineGetter__(property, etters.get);
         }
-        if(etters.set) {
+        if (etters.set) {
           o.__defineSetter__(property, etters.set);
         }
       };
@@ -283,7 +287,9 @@
           );
     };
 
-    NOOP.prototype = this.prototype || NOOP.prototype;
+    if (this.prototype) {
+      NOOP.prototype = this.prototype;
+    }
     fnBound.prototype = new NOOP();
 
     return fnBound;
@@ -291,8 +297,8 @@
 
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
     'HTML',
-    METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
-        return $1.toUpperCase() + $2.toLowerCase()
+    METER_TAG.replace(/^(.)(.*)$/, function(_, $1, $2) {
+        return $1.toUpperCase() + $2.toLowerCase();
     }),
     'Element'
   ].join('');
@@ -317,17 +323,19 @@
   // ie 8 document.createElement is not a function
   // ie 7 document.createElement.apply is undefined
   var createElement = (function(createElement) {
-    if (!createElement.apply) {
-      return createElement;
-    } else {
+    if (createElement.apply) {
       return function() {
         return createElement.apply(document, arguments);
+      };
+    } else {
+      return function(tagName, options) {
+        return createElement(tagName, options);
       };
     }
   })(document[METHOD_CREATE_ELEMENT]);
 
   var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
-    var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function () {
+    var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function() {
       throw new TypeError('Illegal constructor');
     });
 
@@ -428,22 +436,19 @@
       var valueElement = meter.getElementsByTagName('div')[2];
       valueElement.className = level.className;
       valueElement.style.width = level.percentage + '%';
-    } catch(_) {}
+    } catch (_) {}
 
     return meter;
   }
 
   // over write document.createElement
-  function documentCreateElemennt() {
-    var el = createElement.apply ? createElement.apply(document, arguments) : createElement(arguments[0]);
+  document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, function() {
+    var el = createElement.apply(document, arguments);
     if (isMeter(el)) {
       polyfill(el);
     }
     return el;
-  }
-  document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, documentCreateElemennt);
-
-  // maybe also cloneNode ??
+  });
 
   function observerSubtree() {
     if (isObservered) {
@@ -481,26 +486,26 @@
     }
 
     each(meters, function(meter) {
-      if (meter['_polyfill']) {
+      if (meter[POLYFILL_SIGN]) {
         return;
       }
 
-      if (!hasAttribute(meter, '_polyfill')) {
-        meter.setAttribute('_polyfill', '');
-
+      if (!hasAttribute(meter, POLYFILL_SIGN)) {
         // ie 8 throws
         try {
           meter.constructor = HTMLMeterElement;
-        } catch(_) {}
+        } catch (_) {}
 
         // ie8 need clone meter might be a new node
         meter = createShadowDom(meter);
         defineEtter(meter);
         observerAttr(meter);
+
+        meter.setAttribute(POLYFILL_SIGN, '');
       }
 
       updateMeterStyle(meter);
-      meter['_polyfill'] = true;
+      meter[POLYFILL_SIGN] = true;
     });
   }
 
@@ -524,7 +529,8 @@
       });
     } else if (supports.propertychange) {
       on(meter, 'propertychange', function(e) {
-        if (METER_PROPS.join(' ').indexOf(e.propertyName) > -1) {updateMeterStyle(e.srcElement);
+        if (METER_PROPS.join(' ').indexOf(e.propertyName) > -1) {
+          updateMeterStyle(e.srcElement);
         }
       });
     } else {
@@ -533,7 +539,7 @@
   }
 
   function createShadowDom(meter) {
-    if (meter.canHaveChildren == false || meter.canHaveHTML == false) {
+    if (meter.canHaveChildren === false || meter.canHaveHTML === false) {
       // ie 8 fails on innerHTML meter
       var parent = meter.parentNode;
       if (parent) {
@@ -553,6 +559,7 @@
         each(slashMeters, function(slashMeter) {
           parent.removeChild(slashMeter);
         });
+
         // anotherway remove </meter><//meter>
         // var next = meter;
         // while (next = next.nextSibling) {
@@ -597,7 +604,7 @@
         propValues[prop] = value === null ? null : value;
         updateMeterStyle(meter);
         return value;
-      }
+      };
     }
 
     each(METER_PROPS, function(prop) {
@@ -627,7 +634,7 @@
 
     var cloneNodeMethd = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
       var clone = cloneNode(false);
-      clone.removeAttribute('_polyfill');
+      clone.removeAttribute(POLYFILL_SIGN);
       polyfill(clone);
       return clone;
     });
