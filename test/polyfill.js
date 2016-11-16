@@ -39,7 +39,7 @@
 
   var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_OPTIMUM, PROP_VALUE];
 
-  var DOCUMENT_CREAMENT_METHOD = 'createElement';
+  var METHOD_CREATE_ELEMENT = 'createElement';
 
   var METER_INITAL_VALUES = {
     min: 0,
@@ -52,7 +52,7 @@
 
   var document = window.document;
 
-  var meterElement = document[DOCUMENT_CREAMENT_METHOD](METER_TAG);
+  var meterElement = document[METHOD_CREATE_ELEMENT](METER_TAG);
   var nativeSupport = meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX];
 
   function isMeter(el) {
@@ -72,14 +72,16 @@
   }
 
   function isVoidValue(obj) {
-    return obj === null || isUndefined(obj) || isNaN(obj) || !isFinite(obj);
+    return isUndefined(obj) || isNaN(+obj) || !isFinite(+obj);
   }
 
-  function fixValue(meter, prop, value) {
-    if (isUndefined(value)) {
-      value = meter[prop];
-    }
+  function getPropValue(meter, prop) {
+    var value = meter[prop];
     var isNull = value === null;
+    var min;
+    var max;
+    var low;
+    value = parseFloat(value);
     switch (prop) {
       case PROP_MIN:
         value = isNull ?
@@ -87,29 +89,38 @@
           value;
         break;
       case PROP_MAX:
+        min = getPropValue(meter, PROP_MIN);
         value = isNull ?
-          mathMax(METER_INITAL_VALUES[PROP_MAX], meter[PROP_MIN]) :
-          mathMax(value, meter[PROP_MIN]);
+          mathMax(min, METER_INITAL_VALUES[PROP_MAX]) :
+          mathMax(min, value);
         break;
       case PROP_LOW:
+        min = getPropValue(meter, PROP_MIN);
+        max = getPropValue(meter, PROP_MAX);
         value = isNull ?
-          meter[PROP_MIN] :
-          mathMin(mathMax(value, meter[PROP_MIN]), meter[PROP_MAX]);
+          min :
+          mathMin(mathMax(min, value), max);
         break;
       case PROP_HIGH:
+        max = getPropValue(meter, PROP_MAX);
+        low = getPropValue(meter, PROP_LOW);
         value = isNull ?
-          meter[PROP_MAX] :
-          mathMin(mathMax(value, meter[PROP_MIN], meter[PROP_LOW]), meter[PROP_MAX]);
+          max :
+          mathMin(mathMax(low, value), max);
         break;
       case PROP_OPTIMUM:
+        min = getPropValue(meter, PROP_MIN);
+        max = getPropValue(meter, PROP_MAX);
         value = isNull ?
-          (meter[PROP_MAX] - meter[PROP_MIN]) / 2 + meter[PROP_MIN] :
-          mathMin(mathMax(value, meter[PROP_MIN]), meter[PROP_MAX]);
+          (max - min) / 2 + min :
+          mathMin(mathMax(min, value), max);
         break;
       case PROP_VALUE:
+        min = getPropValue(meter, PROP_MIN);
+        max = getPropValue(meter, PROP_MAX);
         value = isNull ?
-          meter[PROP_MIN] :
-          mathMin(mathMax(value, meter[PROP_MIN]), meter[PROP_MAX]);
+          min :
+          mathMin(mathMax(min, value), max);
         break;
     }
     return value;
@@ -117,7 +128,7 @@
 
   function fixProps(propValues) {
     each(METER_PROPS, function(prop) {
-      var value = parseFloat(propValues[prop]);
+      var value = propValues[prop];
       if (isVoidValue(value)) {
         value = null;
       }
@@ -135,12 +146,12 @@
     });
     propValues = fixProps(propValues);
 
-    var min = fixValue(propValues, PROP_MIN);
-    var max = fixValue(propValues, PROP_MAX);
-    var low = fixValue(propValues, PROP_LOW);
-    var high = fixValue(propValues, PROP_HIGH);
-    var optimum = fixValue(propValues, PROP_OPTIMUM);
-    var value = fixValue(propValues, PROP_VALUE);
+    var min = getPropValue(propValues, PROP_MIN);
+    var max = getPropValue(propValues, PROP_MAX);
+    var low = getPropValue(propValues, PROP_LOW);
+    var high = getPropValue(propValues, PROP_HIGH);
+    var optimum = getPropValue(propValues, PROP_OPTIMUM);
+    var value = getPropValue(propValues, PROP_VALUE);
 
     var percentage = min === max ? 0 : (value - min) / (max - min) * 100;
     var level = LEVEL_OPTIMUM;
@@ -179,19 +190,19 @@
       }
     }
 
-    // firefox show diffently from chrome when
-    // value === high/low && min === max
-    if (isFirefox && min === max) {
-      percentage = 100;
-    }
+    // firefox show diffently from chrome
+    // when value === high/low or min === max
+    if (isFirefox) {
+      if (min === max) {
+        percentage = 100;
+      }
 
-    if (isFirefox &&
-      (
-        (optimum > high && value === high) ||
-        (optimum < low && value === low)
-      )
-     ) {
-      level = LEVEL_SUBOPTIMUM;
+      if (
+          (optimum > high && value === high) ||
+          (optimum < low && value === low)
+       ) {
+        level = LEVEL_SUBOPTIMUM;
+      }
     }
 
     return {
@@ -283,7 +294,7 @@
 
   var documentElement = document.documentElement;
   // ie 8. document.createElement is not a function
-  var createElement = bind.call(document[DOCUMENT_CREAMENT_METHOD], document);
+  var createElement = bind.call(document[METHOD_CREATE_ELEMENT], document);
 
   var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
     var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function () {
@@ -400,7 +411,7 @@
     }
     return el;
   }
-  document[DOCUMENT_CREAMENT_METHOD] = createNativeFunction(DOCUMENT_CREAMENT_METHOD, documentCreateElemennt);
+  document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, documentCreateElemennt);
 
   // maybe also cloneNode ??
 
@@ -491,7 +502,9 @@
   }
 
   function defineEtter(meter) {
+    var METHOD_SET_ATTRIBUTE = 'setAttribute';
     var propValues = {};
+    var setAttribute = bind.call(meter[METHOD_SET_ATTRIBUTE], meter);
 
     each(METER_PROPS, function(prop) {
       propValues[prop] = meter.getAttribute(prop);
@@ -501,22 +514,20 @@
 
     function getGetter(prop) {
       return function() {
-        return fixValue(meter, prop, propValues[prop]);
+        return getPropValue(propValues, prop);
       };
     }
 
     function getSetter(prop) {
       return function(value) {
-        if (value === null) {
-          return propValues[prop] = value;
-        }
-
-        if (isVoidValue(parseFloat(value))) {
+        if (isVoidValue(value)) {
           throw new TypeError('Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.');
         }
 
-        propValues[prop] = parseFloat(value);
-        updateMeterStyle(this);
+        setAttribute(prop, '' + meter[prop]);
+
+        propValues[prop] = value === null ? null : value;
+        updateMeterStyle(meter);
         return value;
       }
     }
@@ -527,9 +538,20 @@
         get: getGetter(prop)
       });
     });
+
+    defineProperty(meter, METHOD_SET_ATTRIBUTE, {
+      value: function(attr, value) {
+        setAttribute(attr, value);
+        attr = attr.toLowerCase();
+        each(METER_PROPS, function(prop) {
+          if (prop === attr) {
+            propValues[prop] = isVoidValue(value) || value === null ? null : value;
+            updateMeterStyle(meter);
+          }
+        });
+      }
+    });
   }
-
-
 
   (function checkReady() {
 
