@@ -73,7 +73,7 @@
 
   function setTbodyInnerHTML(tbody, html) {
     try {
-      tbody.innerHTML = html.join('');
+      tbody.innerHTML = html;
     } catch(_) {
       // ie 9-
       var div = document.createElement('div');

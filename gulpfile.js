@@ -83,7 +83,7 @@ gulp.task('styles:min', function() {
     .pipe(rename(pkg.name + '.min.scss'))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(sass({
-      outputStyle: 'compact',
+      outputStyle: 'expanded',
       precision: 10,
       onError: console.error.bind(console, 'Sass error:')
     }))
