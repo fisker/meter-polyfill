@@ -46,6 +46,7 @@ https://fisker.github.io/meter-polyfill/test/fakemeter/meter.html
 ## usage
 
 ```
+<link rel="stylesheet" href="meter-polyfill.min.css">
 <script src="path/to/meter-polyfill.min.js"></script>
 <script>
 console.log(meterPolyfill);
@@ -54,6 +55,7 @@ console.log(meterPolyfill);
 
 amd loader
 ```
+<link rel="stylesheet" href="meter-polyfill.min.css">
 <script src="require.min.js"></script>
 <script>
 require(['path/to/meter-polyfill.min.js'], function(meterPolyfill) {
