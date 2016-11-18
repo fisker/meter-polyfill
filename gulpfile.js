@@ -116,7 +116,7 @@ gulp.task('styles:release', function() {
     .pipe(autoprefixer(AUTOPREFIXER_BROWSERS))
     .pipe(header(banner, {pkg}))
     .pipe(sourcemaps.write('./maps', {
-      // addComment: false
+      addComment: false
     }))
     .pipe(gulp.dest('dist'))
     .pipe(size({title: 'styles'}));
