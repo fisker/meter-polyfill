@@ -22,13 +22,9 @@
   var LEVEL_OPTIMUM = 1;
   var LEVEL_SUBOPTIMUM = 2;
   var LEVEL_SUBSUBOPTIMUM = 3;
-  var METER_CLASS_PREFIX = 'meter-';
 
-  var METER_VALUE_CLASSES = {
-    inner: METER_CLASS_PREFIX + 'inner-element',
-    bar: METER_CLASS_PREFIX + 'bar'
-  };
-
+  var METER_CLASS_PREFIX = METER_TAG.toLowerCase() + '-';
+  var METER_VALUE_CLASSES = {};
   METER_VALUE_CLASSES[LEVEL_OPTIMUM] = METER_CLASS_PREFIX + 'optimum-value';
   METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] = METER_CLASS_PREFIX + 'suboptimum-value';
   METER_VALUE_CLASSES[LEVEL_SUBSUBOPTIMUM] = METER_CLASS_PREFIX + 'even-less-good-value';
@@ -96,7 +92,6 @@
     var isNullValue = isNull(value);
     var min;
     var max;
-    var low;
     value = parseFloat(value);
     switch (prop) {
       case PROP_MIN:
@@ -104,24 +99,28 @@
           METER_INITAL_VALUES[PROP_MIN] :
           value;
         break;
+
       case PROP_MAX:
         min = getPropValue(meter, PROP_MIN);
         value = isNullValue ?
           mathMax(min, METER_INITAL_VALUES[PROP_MAX]) :
           mathMax(min, value);
         break;
+
       case PROP_LOW:
         min = getPropValue(meter, PROP_MIN);
         value = isNullValue ?
           min :
           between(value, min, getPropValue(meter, PROP_MAX));
         break;
+
       case PROP_HIGH:
         max = getPropValue(meter, PROP_MAX);
         value = isNullValue ?
           max :
           between(value, getPropValue(meter, PROP_LOW), max);
         break;
+
       case PROP_OPTIMUM:
         min = getPropValue(meter, PROP_MIN);
         max = getPropValue(meter, PROP_MAX);
@@ -129,12 +128,14 @@
           (max - min) / 2 + min :
           between(value, min, max);
         break;
+
       case PROP_VALUE:
         min = getPropValue(meter, PROP_MIN);
         value = isNullValue ?
           min :
           between(value, min, getPropValue(meter, PROP_MAX));
         break;
+
       default:
         break;
     }
@@ -227,505 +228,515 @@
     };
   }
 
-  var meterPolyfill = {
-    version: VERSION,
-    support: nativeSupport,
-    CLASSES: METER_VALUE_CLASSES,
-    LEVEL_SUBOPTIMUM: LEVEL_SUBOPTIMUM,
-    LEVEL_OPTIMUM: LEVEL_OPTIMUM,
-    LEVEL_SUBSUBOPTIMUM: LEVEL_SUBSUBOPTIMUM,
-    calc: calcLevel,
-    polyfill: NOOP
-  };
+  var meterPolyfill = nativeSupport ? NOOP : (function(){
+    /* polyfill starts */
 
-  if (nativeSupport) {
-    return meterPolyfill;
-  }
+    var POLYFILL_FLAG = '_polyfill';
 
-  /* polyfill starts */
+    var METHOD_DOM_NODE_INSERTED = 'DOMNodeInserted';
+    var METHOD_DOM_ATTR_MODIFIED = 'DOMAttrModified';
+    var METHOD_SET_ATTRIBUTE = 'setAttribute';
+    var METHOD_HAS_ATTRIBUTE = 'hasAttribute';
+    var METHOD_GET_ATTRIBUTE = 'getAttribute';
+    var METHOD_CLONE_NODE = 'cloneNode';
+    var METHOD_APPEND_CHILD = 'appendChild';
+    var METHOD_ADD_EVENT_LISTENER = 'addEventListener';
+    var METHOD_ATTACH_EVENT = 'attachEvent';
+    var METHOD_GET_ELEMENTS_BY_TAG_NAME = 'getElementsByTagName';
+    var METHOD_PROTOTYPE = 'prototype';
+    var METHOD_CONSTRUCTOR = 'constructor';
+    var METHOD_CALL = 'call';
+    var METHOD_APPLY = 'apply';
 
-  var POLYFILL_FLAG = '_polyfill';
+    var DIV_TAG = 'DIV';
 
-  var documentElement = document.documentElement;
+    var TIMEOUT_FREQUENCY = 50;
 
-  var defineProperty;
-  if (Object.defineProperty) {
-    defineProperty = function(o, property, etters) {
-      etters.enumerable = true;
-      etters.configurable = true;
+    var documentElement = document.documentElement;
 
-      try {
-        Object.defineProperty(o, property, etters);
-      } catch (e) {
-        if (e.number === -0x7FF5EC54) {
-          etters.enumerable = false;
-          Object.defineProperty(o, property, etters);
-        }
-      }
-    };
-  } else {
-    if ('__defineSetter__' in documentElement) {
+    var defineProperty;
+    var objectDefineProperty = Object.defineProperty;
+    var METHOD_DEFINE_SETTER = '__defineSetter__';
+    var METHOD_DEFINE_GETTER = '__defineGetter__';
+    if (objectDefineProperty) {
       defineProperty = function(o, property, etters) {
-        if (etters.get) {
-          o.__defineGetter__(property, etters.get);
-        }
-        if (etters.set) {
-          o.__defineSetter__(property, etters.set);
-        }
-      };
-    } else {
-      defineProperty = function(o, property, etters) {
-        if (etters.get) {
-          o[property] = etters.get.call(o);
-        }
-      };
-    }
-  }
+        etters.enumerable = true;
+        etters.configurable = true;
 
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-  var bind = Function.prototype.bind || function(oThis) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    var fnToBind = this;
-    var NOOP = function() {};
-    var fnBound = function() {
-        return fnToBind.apply(
-          this instanceof NOOP ? this : oThis || this,
-          args.concat(Array.prototype.slice.call(arguments))
-          );
-    };
-
-    if (this.prototype) {
-      NOOP.prototype = this.prototype;
-    }
-    fnBound.prototype = new NOOP();
-
-    return fnBound;
-  };
-
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
-  // Production steps of ECMA-262, Edition 5, 15.2.3.5
-  // Reference: http://es5.github.io/#x15.2.3.5
-  var create = Object.create || (function() {
-    function Temp() {}
-    var hasOwn = Object.prototype.hasOwnProperty;
-
-    return function (O) {
-      if (typeof O != 'object') {
-        throw TypeError('Object prototype may only be an Object or null');
-      }
-      Temp.prototype = O;
-      var obj = new Temp();
-      Temp.prototype = null;
-      if (arguments.length > 1) {
-        var Properties = Object(arguments[1]);
-        for (var prop in Properties) {
-          if (hasOwn.call(Properties, prop)) {
-            obj[prop] = Properties[prop];
+        try {
+          objectDefineProperty(o, property, etters);
+        } catch (e) {
+          if (e.number === -0x7FF5EC54) {
+            etters.enumerable = false;
+            objectDefineProperty(o, property, etters);
           }
         }
+      };
+    } else {
+      if (METHOD_DEFINE_SETTER in documentElement) {
+        defineProperty = function(o, property, etters) {
+          if (etters.get) {
+            o[METHOD_DEFINE_GETTER](property, etters.get);
+          }
+          if (etters.set) {
+            o[METHOD_DEFINE_SETTER](property, etters.set);
+          }
+        };
+      } else {
+        defineProperty = function(o, property, etters) {
+          if (etters.get) {
+            o[property] = etters.get[METHOD_CALL](o);
+          }
+        };
       }
-      return obj;
+    }
+
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+    var bind = Function[METHOD_PROTOTYPE].bind || function(oThis) {
+      var slice = Array[METHOD_PROTOTYPE].slice;
+      var args = slice[METHOD_CALL](arguments, 1);
+      var fnToBind = this;
+      var NOOP = function() {};
+      var fnBound = function() {
+        return fnToBind[METHOD_APPLY](
+          this instanceof NOOP ? this : oThis || this,
+          args.concat(slice[METHOD_CALL](arguments))
+          );
+      };
+
+      if (this[METHOD_PROTOTYPE]) {
+        NOOP[METHOD_PROTOTYPE] = this[METHOD_PROTOTYPE];
+      }
+      fnBound[METHOD_PROTOTYPE] = new NOOP();
+
+      return fnBound;
     };
-  })();
 
-  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
-    'HTML',
-    METER_TAG.charAt(0).toUpperCase() +
-    METER_TAG.slice(1).toLowerCase() +
-    'Element'
-  ].join('');
-
-  function createNativeFunction(fnName, fn) {
-    function toString() {
-      return 'function ' + fnName + '() { [native code] }';
+    function throwTypeError(msg) {
+      throw new TypeError(msg);
     }
 
-    var nativeToString = toString.toString.toString;
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
+    // Production steps of ECMA-262, Edition 5, 15.2.3.5
+    // Reference: http://es5.github.io/#x15.2.3.5
+    var create = Object.create || (function() {
+      function Temp() {}
+      var hasOwn = Object[METHOD_PROTOTYPE].hasOwnProperty;
 
-    // firfox shows bound toString in console not bug
-    // ie7/8 is buggy without bind
-    toString.toString = bind.call(nativeToString, nativeToString);
-    // some browsers shows empty function name in toString.toString.toString
-    toString.toString.toString = toString.toString;
-
-    fn.toString = toString;
-    return fn;
-  }
-
-  // ie 8 document.createElement is not a function
-  // ie 7 document.createElement.apply is undefined
-  var createElement = (function(createElement) {
-    if (createElement.apply) {
-      return function() {
-        return createElement.apply(document, arguments);
+      return function (O) {
+        if (typeof O !== 'object') {
+          throwTypeError('Object ' + METHOD_PROTOTYPE + ' may only be an Object or null');
+        }
+        Temp[METHOD_PROTOTYPE] = O;
+        var obj = new Temp();
+        Temp[METHOD_PROTOTYPE] = null;
+        if (arguments.length > 1) {
+          var Properties = Object(arguments[1]);
+          for (var prop in Properties) {
+            if (hasOwn[METHOD_CALL](Properties, prop)) {
+              obj[prop] = Properties[prop];
+            }
+          }
+        }
+        return obj;
       };
-    } else {
+    })();
+
+    var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
+      'HTML',
+      METER_TAG.charAt(0).toUpperCase(),
+      METER_TAG.slice(1).toLowerCase(),
+      'Element'
+    ].join('');
+
+    // ie 8 document.createElement is not a function
+    // ie 7 document.createElement.apply is undefined
+    var createElement = (function(createElement) {
       return function(tagName, options) {
-        return createElement(tagName, options);
+        return createElement[METHOD_APPLY] ?
+          createElement[METHOD_APPLY](document, arguments) :
+          createElement(tagName, options);
       };
-    }
-  })(document[METHOD_CREATE_ELEMENT]);
+    })(document[METHOD_CREATE_ELEMENT]);
 
-  var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
-    var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function() {
-      if(isFirefox) {
-        throw new TypeError('Illegal constructor.');
-      } else {
-        throw new TypeError('Illegal constructor');
+    function createNativeFunction(fnName, fn) {
+      var METHOD_TO_STRING = 'toString';
+
+      function toString() {
+        return 'function ' + fnName + '() { [native code] }';
       }
-    });
 
-    // ie 8 constructor is null
-    var prototype = (
-      window.HTMLElement ||
-      meterElement.constructor ||
-      window.Element ||
-      window.Node ||
-      NOOP).prototype;
+      var nativeToString = toString[METHOD_TO_STRING][METHOD_TO_STRING];
 
-    prototype = create(prototype);
+      // firfox shows bound toString in console not bug
+      // ie7/8 is buggy without bind
+      toString[METHOD_TO_STRING] = bind[METHOD_CALL](nativeToString, nativeToString);
+      // some browsers shows empty function name in toString.toString.toString
+      toString[METHOD_TO_STRING][METHOD_TO_STRING] = toString[METHOD_TO_STRING];
 
-    HTMLMeterElement.prototype = prototype;
-    HTMLMeterElement.prototype.constructor = HTMLMeterElement;
-
-    return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = HTMLMeterElement;
-  })();
-
-  // there is no moz/ms/o vendor prefix
-  var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-  var isObservered = false;
-  var isReady = false;
-
-  meterElement[METER_TAG] = METER_TAG; // for attersAsProps test
-  var supports = {
-    MutationObserver: !!MutationObserver,
-    addEventListener: !!window.addEventListener,
-    attachEvent: !!window.attachEvent,
-    attersAsProps: meterElement.getAttribute(METER_TAG) === METER_TAG, // (IE8- bug)
-    unknownElement: !!meterElement.constructor,
-    hasAttribute: !!meterElement.hasAttribute,
-    propertychange: 'onpropertychange' in document
-  };
-
-  function on(el, events, listener, useCapture) {
-    if (!el) {
-      return;
-    }
-    each(events.split(' '), function(event) {
-      if (supports.addEventListener) {
-        el.addEventListener(event, listener, !!useCapture);
-      } else if (supports.attachEvent) {
-        el.attachEvent('on' + event, listener);
-      } else {
-        el['on' + event] = listener;
-      }
-    });
-  }
-
-  if (!supports.MutationObserver) {
-    var supportsDOMNodeInserted = false;
-    var supportsDOMAttrModified = false;
-    var testDiv = createElement('div');
-    var testChild = createElement('div');
-    on(testDiv, 'DOMNodeInserted', function() {
-      supportsDOMNodeInserted = true;
-    });
-    testDiv.appendChild(testChild);
-    on(testDiv, 'DOMAttrModified', function() {
-      supportsDOMAttrModified = true;
-    });
-    testDiv.setAttribute(PROP_MIN, 1);
-    testChild = null;
-    testDiv = null;
-
-    supports.DOMNodeInserted = supportsDOMNodeInserted;
-    supports.DOMAttrModified = supportsDOMAttrModified;
-  }
-
-  var METER_SHADOW_HTML = [
-    '<div class="' + METER_VALUE_CLASSES.inner + '">',
-      '<div class="' + METER_VALUE_CLASSES.bar + '">',
-        '<div class="' + METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] + '" style="width: 0">',
-        '</div>',
-      '</div>',
-    '</div>'
-  ].join('');
-
-  var setTimeout = window.setTimeout;
-
-  function hasAttribute(el, name) {
-    if (supports.hasAttribute) {
-      return el.hasAttribute(name);
-    } else {
-      return el.getAttribute(name) !== null;
-    }
-  }
-
-  function updateMeterStyle(meter) {
-    var level = calcLevel(meter);
-
-    try {
-      var valueElement = meter.getElementsByTagName('div')[2];
-      valueElement.className = level.className;
-      valueElement.style.width = level.percentage + '%';
-    } catch (_) {}
-
-    return meter;
-  }
-
-  // over write document.createElement
-  document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, function() {
-    var el = createElement.apply(document, arguments);
-    if (isMeter(el)) {
-      polyfill(el);
-    }
-    return el;
-  });
-
-  function observerSubtree() {
-    if (isObservered) {
-      return;
+      fn[METHOD_TO_STRING] = toString;
+      return fn;
     }
 
-    // observe subtree
-    if (supports.MutationObserver) {
-      var observer = new MutationObserver(function(mutations) {
-        each(mutations, function(mutation) {
-          polyfill(mutation.target);
-        });
+    var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
+      var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function() {
+        throwTypeError('Illegal ' + METHOD_CONSTRUCTOR + '' + (isFirefox ? '.' : ''));
       });
 
-      observer.observe(documentElement, {
-        subtree: true,
-        childList: true
-      });
-    } else if (supports.DOMNodeInserted) {
-      on(documentElement, 'DOMNodeInserted', function(e) {
-        polyfill(e.target);
-      });
-    } else {
-      // any idea ?
-    }
-    isObservered = true;
-  }
+      // ie 8 constructor is null
+      var prototype = (
+        window.HTMLElement ||
+        meterElement[METHOD_CONSTRUCTOR] ||
+        window.Element ||
+        window.Node ||
+        NOOP)[METHOD_PROTOTYPE];
 
-  function polyfill(context) {
-    var meters = [];
-    if (isMeter(context)) {
-      meters = [context];
-    } else {
-      meters = (context || document).getElementsByTagName(METER_TAG);
+      prototype = create(prototype);
+
+      HTMLMeterElement[METHOD_PROTOTYPE] = prototype;
+      HTMLMeterElement[METHOD_PROTOTYPE][METHOD_CONSTRUCTOR] = HTMLMeterElement;
+
+      return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = HTMLMeterElement;
+    })();
+
+    // there is no moz/ms/o vendor prefix
+    var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+    var isReady = false;
+
+    meterElement[METER_TAG] = METER_TAG; // for attersAsProps test
+
+    var SUPPORTS_MUTATION_OBSERVER = !!MutationObserver;
+    var SUPPORTS_ADD_EVENT_LISTENER = !!window[METHOD_ADD_EVENT_LISTENER];
+    var SUPPORTS_ATTACH_EVENT = !!window[METHOD_ATTACH_EVENT];
+    var SUPPORTS_ATTERS_AS_PROPS = meterElement[METHOD_GET_ATTRIBUTE](METER_TAG) === METER_TAG; // (IE8- bug)
+    var SUPPORTS_HAS_ATTRIBUTE = !!meterElement[METHOD_HAS_ATTRIBUTE];
+    var SUPPORTS_PROPERTYCHANGE = 'onpropertychange' in document;
+    var SUPPORTS_DOM_NODE_INSERTED;
+    var SUPPORTS_DOM_ATTR_MODIFIED;
+
+    if (!SUPPORTS_MUTATION_OBSERVER) {
+      var testDiv = createElement(DIV_TAG);
+      var testChild = createElement(DIV_TAG);
+      on(testDiv, METHOD_DOM_NODE_INSERTED, function() {
+        SUPPORTS_DOM_NODE_INSERTED = true;
+      });
+      testDiv[METHOD_APPEND_CHILD](testChild);
+      on(testDiv, METHOD_DOM_ATTR_MODIFIED, function() {
+        SUPPORTS_DOM_ATTR_MODIFIED = true;
+      });
+      testDiv[METHOD_SET_ATTRIBUTE](PROP_MIN, 1);
+      testChild = null;
+      testDiv = null;
     }
 
-    each(meters, function(meter) {
-      if (meter[POLYFILL_FLAG]) {
+    function on(el, events, listener, useCapture) {
+      if (!el) {
         return;
       }
-
-      if (!hasAttribute(meter, POLYFILL_FLAG)) {
-        // ie 8 throws
-        try {
-          meter.constructor = HTMLMeterElement;
-        } catch (_) {}
-
-        // ie8 need clone meter might be a new node
-        meter = createShadowDom(meter);
-        defineEtter(meter);
-        observerAttr(meter);
-
-        meter.setAttribute(POLYFILL_FLAG, VERSION);
-      }
-
-      updateMeterStyle(meter);
-      meter[POLYFILL_FLAG] = VERSION;
-    });
-  }
-
-  function observerAttr(meter) {
-    // observe subtree
-    if (supports.MutationObserver) {
-      var observer = new MutationObserver(function(mutations) {
-        each(mutations, function(mutation) {
-          updateMeterStyle(mutation.target);
-        });
-      });
-      observer.observe(meter, {
-        attributes: true,
-        attributeFilter: METER_PROPS
-      });
-    } else if (supports.DOMAttrModified) {
-      on(meter, 'DOMAttrModified', function(e) {
-        if (METER_PROPS.join(' ').indexOf(e.attrName) > -1) {
-          updateMeterStyle(e.target);
+      each(events.split(' '), function(event) {
+        if (SUPPORTS_ADD_EVENT_LISTENER) {
+          el[METHOD_ADD_EVENT_LISTENER](event, listener, !!useCapture);
+        } else if (SUPPORTS_ATTACH_EVENT) {
+          el[METHOD_ATTACH_EVENT]('on' + event, listener);
+        } else {
+          el['on' + event] = listener;
         }
       });
-    } else if (supports.propertychange) {
-      on(meter, 'propertychange', function(e) {
-        if (METER_PROPS.join(' ').indexOf(e.propertyName) > -1) {
-          updateMeterStyle(e.srcElement);
-        }
-      });
-    } else {
-      // anything ?
     }
-  }
 
-  function createShadowDom(meter) {
-    if (meter.canHaveChildren === false || meter.canHaveHTML === false) {
-      // ie 8 fails on innerHTML meter
-      var parent = meter.parentNode;
-      if (parent) {
-        var meterClone = createElement(METER_TAG);
-        each(METER_PROPS, function(prop) {
-          var value = meter[prop];
-          if (!isVoidValue(value)) {
-            meterClone[prop] = meter[prop];
-          }
-        });
-        parent.replaceChild(meterClone, meter);
-        meterClone.innerHTML = METER_SHADOW_HTML;
-        meter = meterClone;
+    var METER_SHADOW_HTML = [
+      '<div class="' + METER_CLASS_PREFIX + 'inner-element">',
+        '<div class="' + METER_CLASS_PREFIX + 'bar">',
+          '<div class="' + METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] + '" style="width: 0">',
+          '</div>',
+        '</div>',
+      '</div>'
+    ].join('');
 
-        // remove </meter><//meter>
-        var slashMeters = parent.getElementsByTagName('/' + METER_TAG);
-        each(slashMeters, function(slashMeter) {
-          parent.removeChild(slashMeter);
-        });
+    var setTimeout = window.setTimeout;
 
-        // anotherway remove </meter><//meter>
-        // var next = meter;
-        // while (next = next.nextSibling) {
-        //   if (next.tagName.toUpperCase() === '/' + METER_TAG) {
-        //     parent.removeChild(next);
-        //   }
-        // }
+    function hasAttribute(el, name) {
+      return SUPPORTS_HAS_ATTRIBUTE ?
+        el[METHOD_HAS_ATTRIBUTE](name) :
+        !isNull(el[METHOD_GET_ATTRIBUTE](name));
+    }
+
+    function updateMeterStyle(meter) {
+      var level = calcLevel(meter);
+
+      try {
+        var valueElement = meter[METHOD_GET_ELEMENTS_BY_TAG_NAME](DIV_TAG)[2];
+        valueElement.className = level.className;
+        valueElement.style.width = level.percentage + '%';
+      } catch (_) {}
+
+      return meter;
+    }
+
+    // over write document.createElement
+    document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, function() {
+      var el = createElement[METHOD_APPLY](document, arguments);
+      if (isMeter(el)) {
+        polyfill(el);
       }
-    } else {
-      meter.innerHTML = METER_SHADOW_HTML;
-    }
-    return meter;
-  }
-
-  function defineEtter(meter) {
-    var METHOD_SET_ATTRIBUTE = 'setAttribute';
-    var METHOD_CLONE_NODE = 'cloneNode';
-    var propValues = {};
-    var setAttribute = bind.call(meter[METHOD_SET_ATTRIBUTE], meter);
-    var cloneNode = bind.call(meter[METHOD_CLONE_NODE], meter);
-
-    each(METER_PROPS, function(prop) {
-      propValues[prop] = meter.getAttribute(prop);
+      return el;
     });
 
-    propValues = fixProps(propValues);
+    function observerSubtree() {
+      // observe subtree
+      if (SUPPORTS_MUTATION_OBSERVER) {
+        var observer = new MutationObserver(function(mutations) {
+          each(mutations, function(mutation) {
+            polyfill(mutation.target);
+          });
+        });
 
-    function getGetter(prop) {
-      return function() {
-        return getPropValue(propValues, prop);
-      };
+        observer.observe(documentElement, {
+          subtree: true,
+          childList: true
+        });
+      } else if (SUPPORTS_DOM_NODE_INSERTED) {
+        on(documentElement, METHOD_DOM_NODE_INSERTED, function(e) {
+          polyfill(e.target);
+        });
+      } else {
+        // any idea ?
+      }
     }
 
-    function getSetter(prop) {
-      return function(value) {
-        if (isVoidValue(value)) {
-          if (isFirefox) {
-            throw new TypeError('Value being assigned to ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.' + prop + ' is not a finite floating-point value.');
-          } else {
-            throw new TypeError('Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.');
-          }
+    function polyfill(context) {
+      context = context || documentElement;
+      var meters = [];
+      if (isMeter(context)) {
+        meters = [context];
+      } else if (context && context.length) {
+        each(context, function(context) {
+          polyfill(context);
+        });
+        return;
+      } else {
+        meters = context[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG);
+      }
+
+      each(meters, function(meter) {
+        if (meter[POLYFILL_FLAG]) {
+          return;
         }
 
-        value = isNull(value) ? 0 : parseFloat(value);
+        if (!hasAttribute(meter, POLYFILL_FLAG)) {
+          // ie 8 throws
+          try {
+            meter[METHOD_CONSTRUCTOR] = HTMLMeterElement;
+          } catch (_) {}
 
-        setAttribute(prop, value);
-        propValues[prop] = value;
+          // ie8 need clone meter might be a new node
+          meter = createShadowDom(meter);
+          defineEtter(meter);
+          observerAttr(meter);
+
+          meter[METHOD_SET_ATTRIBUTE](POLYFILL_FLAG, VERSION);
+        }
+
         updateMeterStyle(meter);
-        return value;
-      };
+        meter[POLYFILL_FLAG] = VERSION;
+      });
     }
 
-    if (!supports.attersAsProps) {
-      each(METER_PROPS, function(prop) {
-        defineProperty(meter, prop, {
-          get: getGetter(prop),
-          set: getSetter(prop)
+    function isMeterProp(prop) {
+      return METER_PROPS.join(' ').indexOf(prop) > -1;
+    }
+
+    function observerAttr(meter) {
+      // observe subtree
+      if (SUPPORTS_MUTATION_OBSERVER) {
+        var observer = new MutationObserver(function(mutations) {
+          each(mutations, function(mutation) {
+            updateMeterStyle(mutation.target);
+          });
         });
-      });
-    }
-
-    var attributeSetter = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
-      setAttribute(attr, value);
-      attr = attr.toLowerCase();
-      each(METER_PROPS, function(prop) {
-        if (prop === attr) {
-          propValues[prop] = isVoidValue(value) || isNull(value) ? null : parseFloat(value);
-          updateMeterStyle(meter);
-        }
-      });
-    });
-
-    defineProperty(meter, METHOD_SET_ATTRIBUTE, {
-      value: attributeSetter
-    });
-
-    var cloneNodeMethd = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
-      var clone = cloneNode(false);
-      clone.removeAttribute(POLYFILL_FLAG);
-      polyfill(clone);
-      return clone;
-    });
-
-    defineProperty(meter, METHOD_CLONE_NODE, {
-      value: cloneNodeMethd
-    });
-  }
-
-  (function checkReady() {
-
-    function completed() {
-      if (document.readyState === 'complete') {
-        isReady = true;
+        observer.observe(meter, {
+          attributes: true,
+          attributeFilter: METER_PROPS
+        });
+      } else if (SUPPORTS_DOM_ATTR_MODIFIED) {
+        on(meter, METHOD_DOM_ATTR_MODIFIED, function(e) {
+          if (isMeterProp(e.attrName)) {
+            updateMeterStyle(e.target);
+          }
+        });
+      } else if (SUPPORTS_PROPERTYCHANGE) {
+        on(meter, 'propertychange', function(e) {
+          if (isMeterProp(e.propertyName)) {
+            updateMeterStyle(e.srcElement);
+          }
+        });
+      } else {
+        // anything ?
       }
     }
-    completed();
 
-    on(document, 'DOMContentLoaded', function() {
-      isReady = true;
-    });
+    function createShadowDom(meter) {
+      if (meter.canHaveChildren === false || meter.canHaveHTML === false) {
+        // ie 8 fails on innerHTML meter
+        var parent = meter.parentNode;
+        if (parent) {
+          var meterClone = createElement(METER_TAG);
+          each(METER_PROPS, function(prop) {
+            var value = meter[prop];
+            if (!isVoidValue(value)) {
+              meterClone[prop] = meter[prop];
+            }
+          });
+          parent.replaceChild(meterClone, meter);
+          meterClone.innerHTML = METER_SHADOW_HTML;
+          meter = meterClone;
 
-    on(window, 'load', function() {
-      isReady = true;
-    });
+          // remove </meter><//meter>
+          var slashMeters = parent[METHOD_GET_ELEMENTS_BY_TAG_NAME]('/' + METER_TAG);
+          each(slashMeters, function(slashMeter) {
+            parent.removeChild(slashMeter);
+          });
 
-    on(document, 'readystatechange', completed);
-
-    // uglify will break window without a wrapper
-    var isTop = false;
-    try {
-      isTop = isNull(window.frameElement);
-    } catch (_) {}
-
-    if (!supports.addEventListener && documentElement.doScroll && isTop) {
-      (function doScroll() {
-        try {
-          documentElement.doScroll();
-          isReady = true;
-        } catch (_) {
-          return setTimeout(doScroll, 50);
+          // anotherway remove </meter><//meter>
+          // var next = meter;
+          // while (next = next.nextSibling) {
+          //   if (next.tagName.toUpperCase() === '/' + METER_TAG) {
+          //     parent.removeChild(next);
+          //   }
+          // }
         }
-      })();
+      } else {
+        meter.innerHTML = METER_SHADOW_HTML;
+      }
+      return meter;
     }
+
+    function defineEtter(meter) {
+      var propValues = {};
+      var setAttribute = bind[METHOD_CALL](meter[METHOD_SET_ATTRIBUTE], meter);
+      var cloneNode = bind[METHOD_CALL](meter[METHOD_CLONE_NODE], meter);
+
+      each(METER_PROPS, function(prop) {
+        propValues[prop] = meter[METHOD_GET_ATTRIBUTE](prop);
+      });
+
+      propValues = fixProps(propValues);
+
+      function getGetter(prop) {
+        return function() {
+          return getPropValue(propValues, prop);
+        };
+      }
+
+      function getSetter(prop) {
+        return function(value) {
+          if (isVoidValue(value)) {
+            var errorMessage = isFirefox ?
+              'Value being assigned to ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.' + prop + ' is not a finite floating-point value.' :
+              'Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.';
+            throwTypeError(errorMessage);
+          }
+
+          value = isNull(value) ? 0 : parseFloat(value);
+
+          setAttribute(prop, value);
+          propValues[prop] = value;
+          updateMeterStyle(meter);
+          return value;
+        };
+      }
+
+      if (!SUPPORTS_ATTERS_AS_PROPS) {
+        each(METER_PROPS, function(prop) {
+          defineProperty(meter, prop, {
+            get: getGetter(prop),
+            set: getSetter(prop)
+          });
+        });
+      }
+
+      var attributeSetter = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
+        setAttribute(attr, value);
+        attr = attr.toLowerCase();
+        each(METER_PROPS, function(prop) {
+          if (prop === attr) {
+            propValues[prop] = isVoidValue(value) || isNull(value) ? null : parseFloat(value);
+            updateMeterStyle(meter);
+          }
+        });
+      });
+
+      defineProperty(meter, METHOD_SET_ATTRIBUTE, {
+        value: attributeSetter
+      });
+
+      var cloneNodeMethd = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
+        var clone = cloneNode(false);
+        clone.removeAttribute(POLYFILL_FLAG);
+        polyfill(clone);
+        return clone;
+      });
+
+      defineProperty(meter, METHOD_CLONE_NODE, {
+        value: cloneNodeMethd
+      });
+    }
+
+    (function checkReady() {
+      function completed() {
+        if (document.readyState === 'complete') {
+          isReady = true;
+        }
+      }
+      completed();
+
+      on(document, 'DOMContentLoaded', function() {
+        isReady = true;
+      });
+
+      on(window, 'load', function() {
+        isReady = true;
+      });
+
+      on(document, 'readystatechange', completed);
+
+      // uglify will break window without a wrapper
+      var isTop = false;
+      try {
+        isTop = isNull(window.frameElement);
+      } catch (_) {}
+
+      if (!SUPPORTS_ADD_EVENT_LISTENER && documentElement.doScroll && isTop) {
+        (function doScroll() {
+          try {
+            documentElement.doScroll();
+            isReady = true;
+          } catch (_) {
+            return setTimeout(doScroll, TIMEOUT_FREQUENCY);
+          }
+        })();
+      }
+    })();
+
+    (function polyfillWhenReady() {
+      if (isReady) {
+        polyfill();
+        observerSubtree();
+      } else {
+        setTimeout(polyfillWhenReady, TIMEOUT_FREQUENCY);
+      }
+    })();
+
+    return polyfill;
   })();
 
-  (function polyfillWhenReady() {
-    if (isReady) {
-      polyfill();
-      observerSubtree();
-    } else {
-      setTimeout(polyfillWhenReady, 50);
-    }
-  })();
+  meterPolyfill.version = VERSION;
+  meterPolyfill.support = nativeSupport;
+  meterPolyfill.CLASSES = METER_VALUE_CLASSES;
+  meterPolyfill.LEVEL_SUBOPTIMUM = LEVEL_SUBOPTIMUM;
+  meterPolyfill.LEVEL_OPTIMUM = LEVEL_OPTIMUM;
+  meterPolyfill.LEVEL_SUBSUBOPTIMUM = LEVEL_SUBSUBOPTIMUM;
+  meterPolyfill.calc = calcLevel;
 
-  meterPolyfill.polyfill = polyfill;
   return meterPolyfill;
 });

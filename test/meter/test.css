@@ -15,9 +15,6 @@ html {
 body {
   font-family: sans-serif; }
 
-meter {
-  vertical-align: middle; }
-
 table {
   border-collapse: collapse;
   width: 100%;

@@ -234,6 +234,8 @@ gulp.task('test', tasks, function() {
   gulp.watch('src/polyfill.js', [
     'test:script-polyfill-meter',
     'test:script-polyfill-' + polyfillMeterTag.toLowerCase(),
+    'test:script-polyfill-min-meter',
+    'test:script-polyfill-min-' + polyfillMeterTag.toLowerCase(),
   ]);
 
   gulp.watch('src/**/*.html', [
