@@ -1,7 +1,6 @@
 (function() {
   'use strict';
 
-  var METER_TAG = 'FAKEMETER';
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
     'HTML',
     METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
@@ -10,11 +9,22 @@
     'Element'].join('');
   var supportMeter = document.createElement('meter').max === 1;
   var test = {};
+  var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
   var METER_VALUE_CLASSES = meterPolyfill.CLASSES;
   var LEVEL_SUBOPTIMUM = meterPolyfill.LEVEL_SUBOPTIMUM;
   var LEVEL_OPTIMUM = meterPolyfill.LEVEL_OPTIMUM;
   var LEVEL_SUBSUBOPTIMUM = meterPolyfill.LEVEL_SUBSUBOPTIMUM;
+  var body = document.body || document.getElementsByTagName('body')[0];
+
+  function HTMLEncode(s) {
+    return ('' + s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   function each(obj, fn) {
     if (obj.length > 1) {
@@ -588,7 +598,7 @@
         function () {
           return '' + window[HTML_METER_ELEMENT_CONSTRICTOR_NAME];
         },
-        'function HTMLFakemeterElement() { [native code] }'
+        'function ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '() { [native code] }'
       ],
       [
         'new ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '()',
@@ -599,14 +609,7 @@
             return e.message;
           }
         },
-        'Illegal constructor'
-      ],
-      [
-        HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.constructor',
-        function () {
-          return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME].constructor;
-        },
-        window[HTML_METER_ELEMENT_CONSTRICTOR_NAME]
+        isFirefox ? 'Illegal constructor.' : 'Illegal constructor'
       ],
       [
         HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.prototype.constructor',
@@ -618,9 +621,145 @@
       [
         'document.createElement(\'' + METER_TAG + '\').constructor',
         function () {
-          return '' + document.createElement(METER_TAG).constructor;
+          return document.createElement(METER_TAG).constructor;
         },
-        'function HTMLFakemeterElement() { [native code] }'
+        window[HTML_METER_ELEMENT_CONSTRICTOR_NAME]
+      ],
+      [
+        'meter.max = "010"',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.max = '010';
+          return parseFloat(meter.max);
+        },
+        10
+      ],
+      [
+        'meter.max = 010',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.max = 8; //010;
+          return parseFloat(meter.max);
+        },
+        8
+      ],
+      [
+        'meter.max = "1e2"',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.max = '1e2';
+          return parseFloat(meter.max);
+        },
+        100
+      ],
+      [
+        'meter.max = 1e2',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.max = 1e2;
+          return parseFloat(meter.max);
+        },
+        100
+      ],
+      [
+        'meter.max = null',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.max = null;
+          return parseFloat(meter.max);
+        },
+        0
+      ],
+      [
+        'meter.setAttribute("max", "010")',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.setAttribute('max', '010');
+          return parseFloat(meter.max);
+        },
+        10
+      ],
+      [
+        'meter.setAttribute("max", "1e2")',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.setAttribute('max', '1e2');
+          return parseFloat(meter.max);
+        },
+        100
+      ],
+      [
+        'meter.setAttribute("max", "null")',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.setAttribute('max', 'null');
+          return parseFloat(meter.max);
+        },
+        1
+      ],
+      [
+        'meter.setAttribute("max", null)',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.setAttribute('max', null);
+          return parseFloat(meter.max);
+        },
+        1
+      ],
+      [
+        'meter.value = 2;meter.value;meter.max=10;meter.value;',
+        function () {
+          var values = [];
+          var meter = document.createElement(METER_TAG);
+          meter.value = 2;
+          values.push(meter.value);
+          meter.max = 10;
+          values.push(meter.value);
+          return values;
+        },
+        [1, 2]
+      ],
+      [
+        'meter.value = -1;meter.value;meter.min=-10;meter.value;',
+        function () {
+          var values = [];
+          var meter = document.createElement(METER_TAG);
+          meter.value = -1;
+          values.push(meter.value);
+          meter.min = -10;
+          values.push(meter.value);
+          return values;
+        },
+        [0, -1]
+      ],
+      [
+        'div.innerHTML = "<meter></meter>"',
+        function () {
+          var div = document.createElement('div');
+          body.appendChild(div);
+          div.innerHTML = '<' + METER_TAG + '></' + METER_TAG + '>';
+          var meter = div.getElementsByTagName(METER_TAG)[0];
+          var max = parseFloat(meter.max);
+          body.removeChild(div);
+          return max === 1;
+        },
+        true
+      ],
+      [
+        'meter.cloneNode().max',
+        function () {
+          var meter = document.createElement(METER_TAG).cloneNode();
+          return parseFloat(meter.max);
+        },
+        1
+      ],
+      [
+        'meter.cloneNode(true).max',
+        function () {
+          var meter = document.createElement(METER_TAG).cloneNode(true);
+          return parseFloat(meter.max);
+        },
+        1
       ],
     ];
 
@@ -630,14 +769,19 @@
         return;
       }
       var result = test[1]();
-      var resultMsg = result === test[2] ?
+      var assertResult = test[2];
+      if (Object.prototype.toString.call(assertResult) === '[object Array]') {
+        result = '[' + result.join(',') + ']';
+        assertResult = '[' + assertResult.join(',') + ']';
+      }
+      var resultMsg = result === assertResult ?
         '<span class="result-pass">√</span>':
         '<span class="result-failed">×</span>';
       html.push([
         '<tr>',
-          '<td>' + test[0] + '</td>',
+          '<td>' + HTMLEncode(test[0]) + '</td>',
           '<td>',
-            result,
+            HTMLEncode(result),
           '</td>',
           '<td>',
             resultMsg,

@@ -18,19 +18,6 @@ meter {
   vertical-align: middle;
 }
 
-<%= METER_TAG %> {
-  box-sizing: border-box;
-  display: inline-block;
-  *display: inline;
-  *zoom: 1;
-  height: 1em;
-  width: 5em;
-  user-select: none;
-  border: 1px solid lightyellow;
-  vertical-align: middle;
-  *text-align: left;
-}
-
 table {
   border-collapse: collapse;
   width: 100%;

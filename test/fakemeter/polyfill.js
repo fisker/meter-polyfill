@@ -13,7 +13,7 @@
   'use strict';
 
   var METER_TAG = 'FAKEMETER';
-  var VERSION = '1.2.0';
+  var VERSION = '1.2.1';
 
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
@@ -56,6 +56,13 @@
   var meterElement = document[METHOD_CREATE_ELEMENT](METER_TAG);
   var nativeSupport = meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX];
 
+  var mathMin = Math[PROP_MIN];
+  var mathMax = Math[PROP_MAX];
+
+  function between(value, low, high) {
+    return mathMin(mathMax(low, value), high);
+  }
+
   function isMeter(el) {
     return el && el.tagName && el.tagName.toUpperCase() === METER_TAG;
   }
@@ -72,8 +79,12 @@
     return typeof obj === 'undefined';
   }
 
+  function isNull(obj) {
+    return obj === null;
+  }
+
   function isVoidValue(obj) {
-    if (obj === null) {
+    if (isNull(obj)) {
       return false;
     }
     var floatValue = parseFloat(obj);
@@ -82,50 +93,47 @@
 
   function getPropValue(meter, prop) {
     var value = meter[prop];
-    var isNull = value === null;
+    var isNullValue = isNull(value);
     var min;
     var max;
     var low;
     value = parseFloat(value);
     switch (prop) {
       case PROP_MIN:
-        value = isNull ?
+        value = isNullValue ?
           METER_INITAL_VALUES[PROP_MIN] :
           value;
         break;
       case PROP_MAX:
         min = getPropValue(meter, PROP_MIN);
-        value = isNull ?
+        value = isNullValue ?
           mathMax(min, METER_INITAL_VALUES[PROP_MAX]) :
           mathMax(min, value);
         break;
       case PROP_LOW:
         min = getPropValue(meter, PROP_MIN);
-        max = getPropValue(meter, PROP_MAX);
-        value = isNull ?
+        value = isNullValue ?
           min :
-          mathMin(mathMax(min, value), max);
+          between(value, min, getPropValue(meter, PROP_MAX));
         break;
       case PROP_HIGH:
         max = getPropValue(meter, PROP_MAX);
-        low = getPropValue(meter, PROP_LOW);
-        value = isNull ?
+        value = isNullValue ?
           max :
-          mathMin(mathMax(low, value), max);
+          between(value, getPropValue(meter, PROP_LOW), max);
         break;
       case PROP_OPTIMUM:
         min = getPropValue(meter, PROP_MIN);
         max = getPropValue(meter, PROP_MAX);
-        value = isNull ?
+        value = isNullValue ?
           (max - min) / 2 + min :
-          mathMin(mathMax(min, value), max);
+          between(value, min, max);
         break;
       case PROP_VALUE:
         min = getPropValue(meter, PROP_MIN);
-        max = getPropValue(meter, PROP_MAX);
-        value = isNull ?
+        value = isNullValue ?
           min :
-          mathMin(mathMax(min, value), max);
+          between(value, min, getPropValue(meter, PROP_MAX));
         break;
       default:
         break;
@@ -221,6 +229,7 @@
 
   var meterPolyfill = {
     version: VERSION,
+    support: nativeSupport,
     CLASSES: METER_VALUE_CLASSES,
     LEVEL_SUBOPTIMUM: LEVEL_SUBOPTIMUM,
     LEVEL_OPTIMUM: LEVEL_OPTIMUM,
@@ -235,7 +244,7 @@
 
   /* polyfill starts */
 
-  var POLYFILL_SIGN = '_polyfill';
+  var POLYFILL_FLAG = '_polyfill';
 
   var documentElement = document.documentElement;
 
@@ -273,7 +282,7 @@
     }
   }
 
-  // https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
   var bind = Function.prototype.bind || function(oThis) {
     var args = Array.prototype.slice.call(arguments, 1);
     var fnToBind = this;
@@ -293,11 +302,36 @@
     return fnBound;
   };
 
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
+  // Production steps of ECMA-262, Edition 5, 15.2.3.5
+  // Reference: http://es5.github.io/#x15.2.3.5
+  var create = Object.create || (function() {
+    function Temp() {}
+    var hasOwn = Object.prototype.hasOwnProperty;
+
+    return function (O) {
+      if (typeof O != 'object') {
+        throw TypeError('Object prototype may only be an Object or null');
+      }
+      Temp.prototype = O;
+      var obj = new Temp();
+      Temp.prototype = null;
+      if (arguments.length > 1) {
+        var Properties = Object(arguments[1]);
+        for (var prop in Properties) {
+          if (hasOwn.call(Properties, prop)) {
+            obj[prop] = Properties[prop];
+          }
+        }
+      }
+      return obj;
+    };
+  })();
+
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
     'HTML',
-    METER_TAG.replace(/^(.)(.*)$/, function(_, $1, $2) {
-        return $1.toUpperCase() + $2.toLowerCase();
-    }),
+    METER_TAG.charAt(0).toUpperCase() +
+    METER_TAG.slice(1).toLowerCase() +
     'Element'
   ].join('');
 
@@ -334,7 +368,11 @@
 
   var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
     var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function() {
-      throw new TypeError('Illegal constructor');
+      if(isFirefox) {
+        throw new TypeError('Illegal constructor.');
+      } else {
+        throw new TypeError('Illegal constructor');
+      }
     });
 
     // ie 8 constructor is null
@@ -345,12 +383,10 @@
       window.Node ||
       NOOP).prototype;
 
-    if (Object.create) {
-      prototype = Object.create(prototype);
-    }
+    prototype = create(prototype);
 
     HTMLMeterElement.prototype = prototype;
-    HTMLMeterElement.constructor = HTMLMeterElement.prototype.constructor = HTMLMeterElement;
+    HTMLMeterElement.prototype.constructor = HTMLMeterElement;
 
     return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = HTMLMeterElement;
   })();
@@ -415,8 +451,6 @@
     '</div>'
   ].join('');
 
-  var mathMin = Math[PROP_MIN];
-  var mathMax = Math[PROP_MAX];
   var setTimeout = window.setTimeout;
 
   function hasAttribute(el, name) {
@@ -484,11 +518,11 @@
     }
 
     each(meters, function(meter) {
-      if (meter[POLYFILL_SIGN]) {
+      if (meter[POLYFILL_FLAG]) {
         return;
       }
 
-      if (!hasAttribute(meter, POLYFILL_SIGN)) {
+      if (!hasAttribute(meter, POLYFILL_FLAG)) {
         // ie 8 throws
         try {
           meter.constructor = HTMLMeterElement;
@@ -499,11 +533,11 @@
         defineEtter(meter);
         observerAttr(meter);
 
-        meter.setAttribute(POLYFILL_SIGN, VERSION);
+        meter.setAttribute(POLYFILL_FLAG, VERSION);
       }
 
       updateMeterStyle(meter);
-      meter[POLYFILL_SIGN] = VERSION;
+      meter[POLYFILL_FLAG] = VERSION;
     });
   }
 
@@ -601,29 +635,30 @@
           }
         }
 
-        setAttribute(prop, value === null ? '0' : '' + value);
-        propValues[prop] = value === null ? 0 : parseFloat(value);
+        value = isNull(value) ? 0 : parseFloat(value);
+
+        setAttribute(prop, value);
+        propValues[prop] = value;
         updateMeterStyle(meter);
         return value;
       };
     }
 
-    each(METER_PROPS, function(prop) {
-      var etters = {
-        get: getGetter(prop)
-      };
-      if (!supports.attersAsProps) {
-        etters.set = getSetter(prop);
-      }
-      defineProperty(meter, prop, etters);
-    });
+    if (!supports.attersAsProps) {
+      each(METER_PROPS, function(prop) {
+        defineProperty(meter, prop, {
+          get: getGetter(prop),
+          set: getSetter(prop)
+        });
+      });
+    }
 
     var attributeSetter = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
       setAttribute(attr, value);
       attr = attr.toLowerCase();
       each(METER_PROPS, function(prop) {
         if (prop === attr) {
-          propValues[prop] = isVoidValue(value) || value === null ? null : value;
+          propValues[prop] = isVoidValue(value) || isNull(value) ? null : parseFloat(value);
           updateMeterStyle(meter);
         }
       });
@@ -635,7 +670,7 @@
 
     var cloneNodeMethd = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
       var clone = cloneNode(false);
-      clone.removeAttribute(POLYFILL_SIGN);
+      clone.removeAttribute(POLYFILL_FLAG);
       polyfill(clone);
       return clone;
     });
@@ -667,17 +702,17 @@
     // uglify will break window without a wrapper
     var isTop = false;
     try {
-      isTop = window.frameElement === null;
+      isTop = isNull(window.frameElement);
     } catch (_) {}
 
     if (!supports.addEventListener && documentElement.doScroll && isTop) {
       (function doScroll() {
         try {
           documentElement.doScroll();
+          isReady = true;
         } catch (_) {
           return setTimeout(doScroll, 50);
         }
-        isReady = true;
       })();
     }
   })();

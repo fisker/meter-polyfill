@@ -55,6 +55,8 @@ var uglifyjsOpts = {
 
 gulp.task('scripts:min', function() {
   return gulp.src('src/polyfill.js')
+    .pipe(replace('<%= METER_TAG %>', 'METER'))
+    .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(rename(pkg.name + '.min.js'))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(
@@ -71,9 +73,9 @@ gulp.task('scripts:min', function() {
 
 gulp.task('scripts:release', function() {
   return gulp.src('src/polyfill.js')
+    .pipe(rename(pkg.name + '.js'))
     .pipe(replace('<%= METER_TAG %>', 'METER'))
     .pipe(replace('<%= VERSION %>', pkg.version))
-    .pipe(rename(pkg.name + '.js'))
     .pipe(header(banner, {pkg}))
     .pipe(gulp.dest('dist'))
     .pipe(size({title: 'scripts'}));
@@ -81,6 +83,8 @@ gulp.task('scripts:release', function() {
 
 gulp.task('styles:min', function() {
   return gulp.src('src/polyfill.scss')
+    .pipe(replace('<%= METER_TAG %>', 'METER'))
+    .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(rename(pkg.name + '.min.scss'))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(sass({
@@ -101,6 +105,8 @@ gulp.task('styles:min', function() {
 gulp.task('styles:release', function() {
   return gulp.src('src/polyfill.scss')
     .pipe(rename(pkg.name + '.scss'))
+    .pipe(replace('<%= METER_TAG %>', 'METER'))
+    .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(sass({
       outputStyle: 'expanded',
@@ -119,32 +125,74 @@ gulp.task('styles:release', function() {
 gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles:min'], function() {
 });
 
-gulp.task('test:scss', function() {
-  return gulp.src('src/**/*.scss')
-    .pipe(flatten())
-    .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
-    .pipe(replace('<%= VERSION %>', pkg.version))
-    .pipe(sourcemaps.init({loadMaps: true}))
-    .pipe(sass({
-      precision: 10,
-      onError: console.error.bind(console, 'Sass error:')
-    }))
-    .pipe(autoprefixer(AUTOPREFIXER_BROWSERS))
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest('test'))
-    .pipe(size({title: 'styles'}))
-    .pipe(browserSync.stream());
+[polyfillMeterTag, 'METER'].forEach(function(polyfillMeterTag) {
+  var dist = 'test/' + polyfillMeterTag.toLowerCase();
+  gulp.task('test:scss-' + polyfillMeterTag.toLowerCase(), function() {
+    return gulp.src('src/**/*.scss')
+      .pipe(flatten())
+      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= VERSION %>', pkg.version))
+      .pipe(sourcemaps.init({loadMaps: true}))
+      .pipe(sass({
+        precision: 10,
+        onError: console.error.bind(console, 'Sass error:')
+      }))
+      .pipe(autoprefixer(AUTOPREFIXER_BROWSERS))
+      .pipe(sourcemaps.write('.'))
+      .pipe(gulp.dest(dist))
+      .pipe(size({title: 'styles'}))
+      .pipe(browserSync.stream());
+  });
+
+  gulp.task('test:script-' + polyfillMeterTag.toLowerCase(), function() {
+    return gulp.src('src/**/*.js')
+      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= VERSION %>', pkg.version))
+      .pipe(flatten())
+      .pipe(gulp.dest(dist))
+      .pipe(size({title: 'script'}))
+      .pipe(browserSync.stream());
+  });
+
+  gulp.task('test:script-polyfill-' + polyfillMeterTag.toLowerCase(), function() {
+    return gulp.src('src/polyfill.js')
+      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= VERSION %>', pkg.version))
+      .pipe(rename('polyfill.js'))
+      .pipe(flatten())
+      .pipe(gulp.dest(dist))
+      .pipe(size({title: 'script-polyfill'}))
+      .pipe(browserSync.stream());
+  });
+
+  gulp.task('test:script-polyfill-min-' + polyfillMeterTag.toLowerCase(), function() {
+    return gulp.src('src/polyfill.js')
+      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= VERSION %>', pkg.version))
+      .pipe(rename('polyfill.min.js'))
+      .pipe(sourcemaps.init({loadMaps: true}))
+      .pipe(
+        uglify(uglifyjsOpts)
+        .on('error', console.error.bind(console, 'UglifyJS error:'))
+      )
+      .pipe(flatten())
+      .pipe(sourcemaps.write('.'))
+      .pipe(gulp.dest(dist))
+      .pipe(size({title: 'script-polyfill-min'}))
+      .pipe(browserSync.stream());
+  });
+
+  gulp.task('test:html-' + polyfillMeterTag.toLowerCase(), function() {
+    return gulp.src('src/**/*.html')
+      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= VERSION %>', pkg.version))
+      .pipe(flatten())
+      .pipe(gulp.dest(dist))
+      .pipe(size({title: 'test:html'}))
+      .pipe(browserSync.stream());
+  });
 });
 
-gulp.task('test:misc', function() {
-  return gulp.src('src/**/*.{js,html}')
-    .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
-    .pipe(replace('<%= VERSION %>', pkg.version))
-    .pipe(flatten())
-    .pipe(gulp.dest('test'))
-    .pipe(size({title: 'script'}))
-    .pipe(browserSync.stream());
-});
 
 gulp.task('test:server', function() {
   browserSync.init({
@@ -161,9 +209,37 @@ gulp.task('test:server', function() {
   //   }));
 });
 
-gulp.task('test', ['test:scss', 'test:misc', 'test:server'], function() {
-  gulp.watch('src/**/*.scss', ['test:scss']);
-  gulp.watch('src/**/*.{js,html}', ['test:misc']);
+var tasks = [];
+[polyfillMeterTag, 'METER'].forEach(function(polyfillMeterTag) {
+  tasks = tasks.concat([
+    'test:scss-' + polyfillMeterTag.toLowerCase(),
+    'test:script-' + polyfillMeterTag.toLowerCase(),
+    'test:script-polyfill-' + polyfillMeterTag.toLowerCase(),
+    'test:script-polyfill-min-' + polyfillMeterTag.toLowerCase(),
+    'test:html-' + polyfillMeterTag.toLowerCase(),
+  ]);
+});
+tasks = tasks.concat(['test:server']);
+
+gulp.task('test', tasks, function() {
+  gulp.watch('src/**/*.scss', [
+    'test:scss-meter',
+    'test:scss-' + polyfillMeterTag.toLowerCase()
+  ]);
+  gulp.watch('src/**/*.js', [
+    'test:script-meter',
+    'test:script-' + polyfillMeterTag.toLowerCase(),
+  ]);
+
+  gulp.watch('src/polyfill.js', [
+    'test:script-polyfill-meter',
+    'test:script-polyfill-' + polyfillMeterTag.toLowerCase(),
+  ]);
+
+  gulp.watch('src/**/*.html', [
+    'test:html-meter',
+    'test:html-' + polyfillMeterTag.toLowerCase(),
+  ]);
 });
 
 gulp.task('default', ['test']);

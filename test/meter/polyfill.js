@@ -12,8 +12,8 @@
 })(this, function(window) {
   'use strict';
 
-  var METER_TAG = '<%= METER_TAG %>';
-  var VERSION = '<%= VERSION %>';
+  var METER_TAG = 'METER';
+  var VERSION = '1.2.1';
 
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 

@@ -41,9 +41,12 @@
     <tbody id="js-test-cases-container">
     </tbody>
   </table>
-  <script src="polyfill.js"></script>
+  <script src="polyfill.min.js"></script>
   <script src="test.js"></script>
   <script>
+  if (meterPolyfill.support) {
+    window.location = '../' + METER_TAG.toLowerCase() + '/meter.min.html';
+  }
   test.showPropTest();
   test.showTestCases();
   </script>

@@ -1,10 +1,3 @@
-/**
- * meter-polyfill - Polyfill for the meter element
- * @version v1.2.1
- * @license MIT
- * @copyright fisker Cheung
- * @link https://github.com/fisker/meter-polyfill
- */
 METER {
   -moz-appearance: meterbar;
   -webkit-appearance: meter;
@@ -18,8 +11,7 @@ METER {
   width: 5em;
   vertical-align: -0.2em;
   -moz-user-select: none;
-  *text-align: left;
-}
+  *text-align: left; }
 
 .meter-inner-element {
   -webkit-appearance: inherit;
@@ -29,8 +21,7 @@ METER {
      -moz-box-sizing: inherit;
           box-sizing: inherit;
   height: 100%;
-  width: 100%;
-}
+  width: 100%; }
 
 .meter-bar {
   background: #e6e6e6;
@@ -43,8 +34,7 @@ METER {
   width: 100%;
   -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;
-          box-sizing: border-box;
-}
+          box-sizing: border-box; }
 
 .meter-optimum-value,
 .meter-suboptimum-value,
@@ -55,8 +45,7 @@ METER {
   -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;
           box-sizing: border-box;
-  user-modify: read-only;
-}
+  user-modify: read-only; }
 
 .meter-optimum-value {
   background: #ad7;
@@ -64,8 +53,7 @@ METER {
   background: -webkit-linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%);
   background: -moz-linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%);
   background: -o-linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%);
-  background: linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%);
-}
+  background: linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%); }
 
 .meter-suboptimum-value {
   background: #fe7;
@@ -73,8 +61,7 @@ METER {
   background: -webkit-linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%);
   background: -moz-linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%);
   background: -o-linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%);
-  background: linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%);
-}
+  background: linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%); }
 
 .meter-even-less-good-value {
   background: #f77;
@@ -82,7 +69,6 @@ METER {
   background: -webkit-linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%);
   background: -moz-linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%);
   background: -o-linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%);
-  background: linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%);
-}
+  background: linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%); }
 
-/*# sourceMappingURL=maps/meter-polyfill.css.map */
+/*# sourceMappingURL=polyfill.css.map */
