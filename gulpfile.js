@@ -134,6 +134,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(sourcemaps.init({loadMaps: true}))
       .pipe(sass({
+        outputStyle: 'expanded',
         precision: 10,
         onError: console.error.bind(console, 'Sass error:')
       }))
