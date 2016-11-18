@@ -1,11 +1,11 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.2.1
+ * @version v1.2.2
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
  */
-METER {
+meter {
   -moz-appearance: meterbar;
   -webkit-appearance: meter;
   -webkit-box-sizing: border-box;
