@@ -6,13 +6,25 @@
     "dist/meter-polyfill.min.css"
   ],
   "authors": [
-    "fisker Cheung <lionkay@gmail.com>"
+    {
+      "name": "fisker Cheung",
+      "email": "lionkay@gmail.com",
+      "url": "https://github.com/fisker/"
+    }
   ],
   "license": "MIT",
   "keywords": [
     "meter"
   ],
+  "moduleType": [
+    "globals",
+    "amd"
+  ],
   "homepage": "https://github.com/fisker/meter-polyfill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fisker/meter-polyfill.git"
+  },
   "ignore": [
     "node_modules",
     "bower_components",
