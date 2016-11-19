@@ -220,9 +220,10 @@ var tasks = [];
     'test:html-' + polyfillMeterTag.toLowerCase(),
   ]);
 });
-tasks = tasks.concat(['test:server']);
 
-gulp.task('test', tasks, function() {
+gulp.task('test', tasks);
+
+gulp.task('default', tasks.concat(['test:server']), function() {
   gulp.watch('src/**/*.scss', [
     'test:scss-meter',
     'test:scss-' + polyfillMeterTag.toLowerCase()
@@ -244,5 +245,3 @@ gulp.task('test', tasks, function() {
     'test:html-' + polyfillMeterTag.toLowerCase(),
   ]);
 });
-
-gulp.task('default', ['test']);

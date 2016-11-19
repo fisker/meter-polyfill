@@ -13,7 +13,7 @@
   'use strict';
 
   var METER_TAG = 'METER';
-  var VERSION = '1.3.4';
+  var VERSION = '1.4.2';
 
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
