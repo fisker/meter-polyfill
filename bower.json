@@ -2,8 +2,8 @@
   "name": "meter-polyfill",
   "description": "Polyfill for the meter element",
   "main": [
-    "dist/meter-polyfill.min.js",
-    "dist/meter-polyfill.min.css"
+    "dist/meter-polyfill.js",
+    "dist/meter-polyfill.css"
   ],
   "authors": [
     {
