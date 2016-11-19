@@ -2,7 +2,10 @@
   "name": "meter-polyfill",
   "version": "1.3.2",
   "description": "Polyfill for the meter element",
-  "main": "dist/polyfill.js",
+  "main": [
+    "dist/meter-polyfill.min.js",
+    "dist/meter-polyfill.min.css"
+  ],
   "author": {
     "name": "fisker Cheung",
     "email": "lionkay@gmail.com",

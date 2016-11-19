@@ -1,19 +1,19 @@
 {
   "name": "meter-polyfill",
   "description": "Polyfill for the meter element",
-  "main": "dist/polyfill.js",
-  "authors": {
-    "name": "fisker Cheung",
-    "email": "lionkay@gmail.com",
-    "url": "https://github.com/fisker/"
-  },
+  "main": [
+    "dist/meter-polyfill.min.js",
+    "dist/meter-polyfill.min.css"
+  ],
+  "authors": [
+    "fisker Cheung <lionkay@gmail.com>"
+  ],
   "license": "MIT",
   "keywords": [
     "meter"
   ],
   "homepage": "https://github.com/fisker/meter-polyfill",
   "ignore": [
-    "**/.*",
     "node_modules",
     "bower_components",
     "test",
