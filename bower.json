@@ -2,9 +2,11 @@
   "name": "meter-polyfill",
   "description": "Polyfill for the meter element",
   "main": "dist/polyfill.js",
-  "authors": [
-    "[object Object]"
-  ],
+  "authors": {
+    "name": "fisker Cheung",
+    "email": "lionkay@gmail.com",
+    "url": "https://github.com/fisker/"
+  },
   "license": "MIT",
   "keywords": [
     "meter"
