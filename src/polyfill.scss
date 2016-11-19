@@ -1,4 +1,4 @@
-<%= METER_TAG %> {
+<%= METER_TAG_NAME %> {
   -moz-appearance: meterbar;
   -webkit-appearance: meter;
   box-sizing: border-box;
@@ -12,14 +12,14 @@
   *text-align: left;
 }
 
-.<%= METER_TAG %>-inner-element {
+.<%= METER_TAG_NAME %>-inner-element {
   appearance: inherit;
   box-sizing: inherit;
   height: 100%;
   width: 100%;
 }
 
-.<%= METER_TAG %>-bar {
+.<%= METER_TAG_NAME %>-bar {
   background: #e6e6e6;
   background: linear-gradient(#e6e6e6, #e6e6e6, #eeeeee 20%, #cccccc 45%, #cccccc 55%);
   height: 100%;
@@ -27,9 +27,9 @@
   box-sizing: border-box;
 }
 
-.<%= METER_TAG %>-optimum-value,
-.<%= METER_TAG %>-suboptimum-value,
-.<%= METER_TAG %>-even-less-good-value {
+.<%= METER_TAG_NAME %>-optimum-value,
+.<%= METER_TAG_NAME %>-suboptimum-value,
+.<%= METER_TAG_NAME %>-even-less-good-value {
   -moz-appearance: meterchunk;
   width: 100%;
   height: 100%;
@@ -37,17 +37,17 @@
   user-modify: read-only;
 }
 
-.<%= METER_TAG %>-optimum-value {
+.<%= METER_TAG_NAME %>-optimum-value {
   background: #ad7;
   background: linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%);
 }
 
-.<%= METER_TAG %>-suboptimum-value {
+.<%= METER_TAG_NAME %>-suboptimum-value {
   background: #fe7;
   background: linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%);
 }
 
-.<%= METER_TAG %>-even-less-good-value {
+.<%= METER_TAG_NAME %>-even-less-good-value {
   background: #f77;
   background: linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%);
 }

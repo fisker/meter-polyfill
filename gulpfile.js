@@ -55,7 +55,7 @@ var uglifyjsOpts = {
 
 gulp.task('scripts:min', function() {
   return gulp.src('src/polyfill.js')
-    .pipe(replace('<%= METER_TAG %>', 'METER'))
+    .pipe(replace('<%= METER_TAG_NAME %>', 'METER'))
     .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(rename(pkg.name + '.min.js'))
     .pipe(sourcemaps.init({loadMaps: true}))
@@ -74,7 +74,7 @@ gulp.task('scripts:min', function() {
 gulp.task('scripts:release', function() {
   return gulp.src('src/polyfill.js')
     .pipe(rename(pkg.name + '.js'))
-    .pipe(replace('<%= METER_TAG %>', 'METER'))
+    .pipe(replace('<%= METER_TAG_NAME %>', 'METER'))
     .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(header(banner, {pkg}))
     .pipe(gulp.dest('dist'))
@@ -83,7 +83,7 @@ gulp.task('scripts:release', function() {
 
 gulp.task('styles:min', function() {
   return gulp.src('src/polyfill.scss')
-    .pipe(replace('<%= METER_TAG %>', 'meter'))
+    .pipe(replace('<%= METER_TAG_NAME %>', 'meter'))
     .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(rename(pkg.name + '.min.scss'))
     .pipe(sourcemaps.init({loadMaps: true}))
@@ -105,7 +105,7 @@ gulp.task('styles:min', function() {
 gulp.task('styles:release', function() {
   return gulp.src('src/polyfill.scss')
     .pipe(rename(pkg.name + '.scss'))
-    .pipe(replace('<%= METER_TAG %>', 'meter'))
+    .pipe(replace('<%= METER_TAG_NAME %>', 'meter'))
     .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(sass({
@@ -130,7 +130,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
   gulp.task('test:scss-' + polyfillMeterTag.toLowerCase(), function() {
     return gulp.src('src/**/*.scss')
       .pipe(flatten())
-      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag.toLowerCase()))
+      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag.toLowerCase()))
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(sourcemaps.init({loadMaps: true}))
       .pipe(sass({
@@ -147,7 +147,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
 
   gulp.task('test:script-' + polyfillMeterTag.toLowerCase(), function() {
     return gulp.src('src/**/*.js')
-      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag))
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(flatten())
       .pipe(gulp.dest(dist))
@@ -157,7 +157,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
 
   gulp.task('test:script-polyfill-' + polyfillMeterTag.toLowerCase(), function() {
     return gulp.src('src/polyfill.js')
-      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag))
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(rename('polyfill.js'))
       .pipe(flatten())
@@ -168,7 +168,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
 
   gulp.task('test:script-polyfill-min-' + polyfillMeterTag.toLowerCase(), function() {
     return gulp.src('src/polyfill.js')
-      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag))
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(rename('polyfill.min.js'))
       .pipe(sourcemaps.init({loadMaps: true}))
@@ -185,7 +185,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
 
   gulp.task('test:html-' + polyfillMeterTag.toLowerCase(), function() {
     return gulp.src('src/**/*.html')
-      .pipe(replace('<%= METER_TAG %>', polyfillMeterTag))
+      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag))
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(flatten())
       .pipe(gulp.dest(dist))

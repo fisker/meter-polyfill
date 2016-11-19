@@ -12,8 +12,8 @@
 })(this, function(window) {
   'use strict';
 
-  var METER_TAG = 'FAKEMETER';
-  var VERSION = '1.4.2';
+  var METER_TAG_NAME = 'FAKEMETER';
+  var VERSION = '1.5.0';
 
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
@@ -23,7 +23,10 @@
   var LEVEL_SUBOPTIMUM = 2;
   var LEVEL_SUBSUBOPTIMUM = 3;
 
-  var METER_CLASS_PREFIX = METER_TAG.toLowerCase() + '-';
+  var METHOD_TO_UPPER_CASE = 'toUpperCase';
+  var METHOD_TO_LOWER_CASE = 'toLowerCase';
+
+  var METER_CLASS_PREFIX = METER_TAG_NAME[METHOD_TO_LOWER_CASE]() + '-';
   var METER_VALUE_CLASSES = {};
   METER_VALUE_CLASSES[LEVEL_OPTIMUM] = METER_CLASS_PREFIX + 'optimum-value';
   METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] = METER_CLASS_PREFIX + 'suboptimum-value';
@@ -35,6 +38,7 @@
   var PROP_HIGH = 'high';
   var PROP_VALUE = 'value';
   var PROP_OPTIMUM = 'optimum';
+  var PROP_LABELS = 'labels';
 
   var METER_PROPS = [PROP_MIN, PROP_MAX, PROP_LOW, PROP_HIGH, PROP_OPTIMUM, PROP_VALUE];
 
@@ -42,25 +46,28 @@
 
   var METER_INITAL_VALUES = {
     min: 0,
-    max: 1
+    max: 1,
+    value: 0
   };
 
   // var PRECISION = isFirefox ? 16 : 6; // firefox and chrome use different precision
 
   var document = window.document;
 
-  var meterElement = document[METHOD_CREATE_ELEMENT](METER_TAG);
+  var meterElement = document[METHOD_CREATE_ELEMENT](METER_TAG_NAME);
   var nativeSupport = meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX];
 
   var mathMin = Math[PROP_MIN];
   var mathMax = Math[PROP_MAX];
 
+
   function between(value, low, high) {
     return mathMin(mathMax(low, value), high);
   }
 
-  function isMeter(el) {
-    return el && el.tagName && el.tagName.toUpperCase() === METER_TAG;
+  function isElement(el, tagName) {
+    var PROP_TAGNAME = 'tagName';
+    return el && el[PROP_TAGNAME] && el[PROP_TAGNAME][METHOD_TO_UPPER_CASE]() === tagName;
   }
 
   function each(arrLike, fn) {
@@ -79,19 +86,17 @@
     return obj === null;
   }
 
-  function isVoidValue(obj) {
-    if (isNull(obj)) {
-      return false;
-    }
-    var floatValue = parseFloat(obj);
-    return isUndefined(obj) || isNaN(floatValue) || !isFinite(floatValue);
+  function isValidValue(obj) {
+    return isNull(obj) || (!isNaN(obj) && isFinite(obj));
   }
 
   function parseValue(value, valueForNull) {
     if (isUndefined(valueForNull)) {
       valueForNull = null;
     }
-    return isVoidValue(value) || isNull(value) ? valueForNull : parseFloat(value);
+    return !isValidValue(value) || isNull(value) ?
+      valueForNull :
+      parseFloat(value);
   }
 
   function assignValues(target, source) {
@@ -106,7 +111,6 @@
     var isNullValue = isNull(value);
     var min;
     var max;
-    value = parseFloat(value);
     switch (prop) {
       case PROP_MIN:
         value = isNullValue ?
@@ -145,9 +149,10 @@
 
       case PROP_VALUE:
         min = getPropValue(propValues, PROP_MIN);
+        max = getPropValue(propValues, PROP_MAX);
         value = isNullValue ?
-          min :
-          between(value, min, getPropValue(propValues, PROP_MAX));
+          between(METER_INITAL_VALUES[PROP_VALUE], min, max) :
+          between(value, min, max);
         break;
 
       default:
@@ -156,7 +161,7 @@
     return value;
   }
 
-  function calcLevel(meter) {
+  function meterCalculator(meter) {
     var propValues = assignValues({}, meter);
 
     var min = getPropValue(propValues, PROP_MIN);
@@ -236,12 +241,11 @@
 
     var POLYFILL_FLAG = '_polyfill';
 
-    var METHOD_DOM_NODE_INSERTED = 'DOMNodeInserted';
-    var METHOD_DOM_ATTR_MODIFIED = 'DOMAttrModified';
+    var METHOD_REMOVE_CHILD = 'removeChild';
     var METHOD_SET_ATTRIBUTE = 'setAttribute';
     var METHOD_HAS_ATTRIBUTE = 'hasAttribute';
     var METHOD_GET_ATTRIBUTE = 'getAttribute';
-    var METHOD_CLONE_NODE = 'cloneNode';
+    var METHOD_REMOVE_ATTRIBUTE = 'removeAttribute';
     var METHOD_APPEND_CHILD = 'appendChild';
     var METHOD_ADD_EVENT_LISTENER = 'addEventListener';
     var METHOD_ATTACH_EVENT = 'attachEvent';
@@ -251,104 +255,117 @@
 
     var PROP_PROTOTYPE = 'prototype';
     var PROP_CONSTRUCTOR = 'constructor';
+    var PROP_PROTO = '__proto__';
 
-    var DIV_TAG = 'DIV';
+    var oObject = Object;
+    var arrayPrototype = Array[PROP_PROTOTYPE];
+    var functionPrototype = Function[PROP_PROTOTYPE];
+    var objectPrototype = oObject[PROP_PROTOTYPE];
 
-    var TIMEOUT_FREQUENCY = 50;
+    var DIV_TAG_NAME = 'DIV';
+    var LABEL_TAG_NAME = 'LABEL';
+
+    var TIMEOUT_FREQUENCY = 10;
 
     var documentElement = document.documentElement;
+    var labels = documentElement[METHOD_GET_ELEMENTS_BY_TAG_NAME](LABEL_TAG_NAME);
+    var meters = documentElement[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG_NAME);
+
+    var PROP_ID = 'id';
+    // var PROP_FOR = 'htmlFor';
+    var ATTR_FOR = 'for';
+
+    var METER_ATTRS = METER_PROPS.concat([PROP_ID]);
+    var LABEL_ATTRS = [ATTR_FOR];
 
     var defineProperty;
-    var objectDefineProperty = Object.defineProperty;
-    var METHOD_DEFINE_SETTER = '__defineSetter__';
-    var METHOD_DEFINE_GETTER = '__defineGetter__';
+    var objectDefineProperty = oObject.defineProperty;
     if (objectDefineProperty) {
-      defineProperty = function(o, property, etters) {
-        etters.enumerable = true;
-        etters.configurable = true;
+      defineProperty = function(o, property, descriptor) {
+        var PROP_ENUMERABLE = 'enumerable';
+        var PROP_CONFIGURABLE = 'configurable';
+
+        descriptor[PROP_ENUMERABLE] = descriptor[PROP_ENUMERABLE] === false ? descriptor[PROP_ENUMERABLE] : true;
+        descriptor[PROP_CONFIGURABLE] = true;
 
         try {
-          objectDefineProperty(o, property, etters);
+          objectDefineProperty(o, property, descriptor);
         } catch (e) {
           if (e.number === -0x7FF5EC54) {
-            etters.enumerable = false;
-            objectDefineProperty(o, property, etters);
+            descriptor[PROP_ENUMERABLE] = false;
+            objectDefineProperty(o, property, descriptor);
           }
         }
       };
     } else {
-      if (METHOD_DEFINE_SETTER in documentElement) {
-        defineProperty = function(o, property, etters) {
-          if (etters.get) {
-            o[METHOD_DEFINE_GETTER](property, etters.get);
+      var METHOD_DEFINE_SETTER = '__defineSetter__';
+      var METHOD_DEFINE_GETTER = '__defineGetter__';
+      var SUPPORTS_DEFINE_SETTER = METHOD_DEFINE_SETTER in documentElement;
+      defineProperty = function(o, property, descriptor) {
+        var PROP_GET = 'get';
+        var PROP_SET = 'set';
+        if (SUPPORTS_DEFINE_SETTER) {
+          if (descriptor[PROP_GET]) {
+            o[METHOD_DEFINE_GETTER](property, descriptor[PROP_GET]);
           }
-          if (etters.set) {
-            o[METHOD_DEFINE_SETTER](property, etters.set);
+          if (descriptor[PROP_SET]) {
+            o[METHOD_DEFINE_SETTER](property, descriptor[PROP_SET]);
           }
-        };
-      } else {
-        defineProperty = function(o, property, etters) {
-          if (etters.get) {
-            o[property] = etters.get[METHOD_CALL](o);
+        } else {
+          if (descriptor[PROP_GET]) {
+            o[property] = descriptor[PROP_GET][METHOD_CALL](o);
           }
-        };
-      }
+        }
+
+        if (descriptor[PROP_VALUE]) {
+          o[property] = descriptor[PROP_VALUE];
+        }
+      };
     }
 
+    var create = oObject.create || function(proto) {
+      // simple but enough
+      NOOP[PROP_PROTOTYPE] = proto;
+      return new NOOP();
+    };
+
+    var indexOf = arrayPrototype.indexOf || function(v) {
+      var i = this.length;
+      while (i-- && this[i] !== v) {}
+      return i;
+    };
+
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-    var bind = Function[PROP_PROTOTYPE].bind || function(oThis) {
-      var slice = Array[PROP_PROTOTYPE].slice;
+    var bind = functionPrototype.bind || function(oThis) {
+      var slice = arrayPrototype.slice;
       var args = slice[METHOD_CALL](arguments, 1);
       var fnToBind = this;
-      var NOOP = function() {};
       var fnBound = function() {
         return fnToBind[METHOD_APPLY](
-          this instanceof NOOP ? this : oThis || this,
+          oThis,
           args.concat(slice[METHOD_CALL](arguments))
         );
       };
-
-      if (this[PROP_PROTOTYPE]) {
-        NOOP[PROP_PROTOTYPE] = this[PROP_PROTOTYPE];
-      }
-      fnBound[PROP_PROTOTYPE] = new NOOP();
-
+      fnBound[PROP_PROTOTYPE] = create(fnToBind[PROP_PROTOTYPE] || null);
       return fnBound;
     };
+
+    function isMeterProp(prop) {
+      return indexOf[METHOD_CALL](METER_PROPS, prop) > -1;
+    }
+
+    function isMeterAttr(attr) {
+      attr = attr[METHOD_TO_LOWER_CASE]();
+      return indexOf[METHOD_CALL](METER_ATTRS, attr) > -1;
+    }
 
     function throwTypeError(msg) {
       throw new TypeError(msg);
     }
 
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
-    // Production steps of ECMA-262, Edition 5, 15.2.3.5
-    // Reference: http://es5.github.io/#x15.2.3.5
-    var create = Object.create || (function() {
-      function Temp() {}
-      var hasOwn = Object[PROP_PROTOTYPE].hasOwnProperty;
-
-      return function (O) {
-        if (typeof O !== 'object') {
-          throwTypeError('Object ' + PROP_PROTOTYPE + ' may only be an Object or null');
-        }
-        Temp[PROP_PROTOTYPE] = O;
-        var obj = new Temp();
-        Temp[PROP_PROTOTYPE] = null;
-        if (arguments.length > 1) {
-          var Properties = Object(arguments[1]);
-          for (var prop in Properties) {
-            if (hasOwn[METHOD_CALL](Properties, prop)) {
-              obj[prop] = Properties[prop];
-            }
-          }
-        }
-        return obj;
-      };
-    })();
-
     var HTML_METER_ELEMENT_CONSTRICTOR_NAME = 'HTML' +
-      METER_TAG.charAt(0).toUpperCase() +
-      METER_TAG.slice(1).toLowerCase() +
+      METER_TAG_NAME.charAt(0)[METHOD_TO_UPPER_CASE]() +
+      METER_TAG_NAME.slice(1)[METHOD_TO_LOWER_CASE]() +
       'Element';
 
     // ie 8 document.createElement is not a function
@@ -361,64 +378,79 @@
       };
     })(document[METHOD_CREATE_ELEMENT]);
 
-    function createNativeFunction(fnName, fn) {
-      var METHOD_TO_STRING = 'toString';
 
+    var METHOD_TO_STRING = 'toString';
+    var nativeToString = oObject[METHOD_TO_STRING];
+    nativeToString = bind[METHOD_CALL](nativeToString, nativeToString);
+    nativeToString[METHOD_TO_STRING] = nativeToString;
+
+    function createNativeFunction(fnName, fn) {
       function toString() {
         return 'function ' + fnName + '() { [native code] }';
       }
 
-      var nativeToString = toString[METHOD_TO_STRING][METHOD_TO_STRING];
-
-      // firfox shows bound toString in console not bug
-      // ie7/8 is buggy without bind
-      toString[METHOD_TO_STRING] = bind[METHOD_CALL](nativeToString, nativeToString);
-      // some browsers shows empty function name in toString.toString.toString
-      toString[METHOD_TO_STRING][METHOD_TO_STRING] = toString[METHOD_TO_STRING];
+      toString[METHOD_TO_STRING] = nativeToString;
 
       fn[METHOD_TO_STRING] = toString;
       return fn;
     }
 
-    var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
-      var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function() {
-        throwTypeError('Illegal ' + PROP_CONSTRUCTOR + '' + (isFirefox ? '.' : ''));
+    var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] ||
+      (window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = (function() {
+        var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function() {
+          throwTypeError('Illegal ' + PROP_CONSTRUCTOR + '' + (isFirefox ? '.' : ''));
+        });
+
+        var htmlElementPrototype = create((window.HTMLElement ||
+          meterElement[PROP_CONSTRUCTOR] ||
+          window.Element ||
+          window.Node ||
+          NOOP)[PROP_PROTOTYPE]);
+
+        defineProperty(htmlElementPrototype, PROP_CONSTRUCTOR, {
+          enumerable: false,
+          value: HTMLMeterElement
+        });
+
+        HTMLMeterElement[PROP_PROTOTYPE] = htmlElementPrototype;
+        HTMLMeterElement[PROP_PROTO] = htmlElementPrototype;
+
+        return HTMLMeterElement;
+      })());
+
+    function unique(array) {
+      var uniqueArray = [];
+      var i = 0;
+      each(array, function(item) {
+        if (indexOf.call(uniqueArray, item) === -1) {
+          uniqueArray[i++] = item;
+        }
       });
-
-      // ie 8 constructor is null
-      var prototype = (
-        window.HTMLElement ||
-        meterElement[PROP_CONSTRUCTOR] ||
-        window.Element ||
-        window.Node ||
-        NOOP)[PROP_PROTOTYPE];
-
-      prototype = create(prototype);
-
-      HTMLMeterElement[PROP_PROTOTYPE] = prototype;
-      HTMLMeterElement[PROP_PROTOTYPE][PROP_CONSTRUCTOR] = HTMLMeterElement;
-
-      return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = HTMLMeterElement;
-    })();
+      return uniqueArray;
+    }
 
     // there is no moz/ms/o vendor prefix
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-    var isReady = false;
 
-    meterElement[METER_TAG] = METER_TAG; // for attersAsProps test
+    meterElement[METER_TAG_NAME] = METER_TAG_NAME; // for attersAsProps test
 
     var SUPPORTS_MUTATION_OBSERVER = !!MutationObserver;
     var SUPPORTS_ADD_EVENT_LISTENER = !!window[METHOD_ADD_EVENT_LISTENER];
     var SUPPORTS_ATTACH_EVENT = !!window[METHOD_ATTACH_EVENT];
-    var SUPPORTS_ATTERS_AS_PROPS = meterElement[METHOD_GET_ATTRIBUTE](METER_TAG) === METER_TAG; // (IE8- bug)
+    var SUPPORTS_ATTERS_AS_PROPS = meterElement[METHOD_GET_ATTRIBUTE](METER_TAG_NAME) === METER_TAG_NAME; // (IE8- bug)
     var SUPPORTS_HAS_ATTRIBUTE = !!meterElement[METHOD_HAS_ATTRIBUTE];
     var SUPPORTS_PROPERTYCHANGE = 'onpropertychange' in document;
     var SUPPORTS_DOM_NODE_INSERTED = false;
     var SUPPORTS_DOM_ATTR_MODIFIED = false;
+    var SUPPORTS_DOM_NODE_REMOVED = false;
 
+
+    var METHOD_DOM_NODE_INSERTED = 'DOMNodeInserted';
+    var METHOD_DOM_ATTR_MODIFIED = 'DOMAttrModified';
+    var METHOD_DOM_NODE_REMOVED = 'DOMNodeRemoved';
     if (!SUPPORTS_MUTATION_OBSERVER) {
-      var testDiv = createElement(DIV_TAG);
-      var testChild = createElement(DIV_TAG);
+      var testDiv = createElement(DIV_TAG_NAME);
+      var testChild = createElement(DIV_TAG_NAME);
 
       on(testDiv, METHOD_DOM_NODE_INSERTED, function() {
         SUPPORTS_DOM_NODE_INSERTED = true;
@@ -426,18 +458,22 @@
       on(testDiv, METHOD_DOM_ATTR_MODIFIED, function() {
         SUPPORTS_DOM_ATTR_MODIFIED = true;
       });
+      on(testDiv, METHOD_DOM_NODE_REMOVED, function() {
+        SUPPORTS_DOM_NODE_REMOVED = true;
+      });
 
       testDiv[METHOD_APPEND_CHILD](testChild);
       testDiv[METHOD_SET_ATTRIBUTE](PROP_MIN, 1);
 
-      testChild = null;
-      testDiv = null;
+      documentElement[METHOD_APPEND_CHILD](testDiv);
+      testDiv[METHOD_REMOVE_CHILD](testChild);
+      documentElement[METHOD_REMOVE_CHILD](testDiv);
+
+      testChild = testDiv = null;
     }
 
+
     function on(el, events, listener, useCapture) {
-      if (!el) {
-        return;
-      }
       each(events.split(' '), function(event) {
         if (SUPPORTS_ADD_EVENT_LISTENER) {
           el[METHOD_ADD_EVENT_LISTENER](event, listener, !!useCapture);
@@ -459,6 +495,7 @@
     ].join('');
 
     var setTimeout = window.setTimeout;
+    var setInterval = window.setInterval;
 
     function hasAttribute(el, name) {
       return SUPPORTS_HAS_ATTRIBUTE ?
@@ -466,47 +503,70 @@
         !isNull(el[METHOD_GET_ATTRIBUTE](name));
     }
 
-    function updateMeterStyle(meter) {
-      var level = calcLevel(meter);
+    function observerAttributes(el, attrs, callback) {
+      if (SUPPORTS_MUTATION_OBSERVER) {
+        new MutationObserver(function(mutations) {
+          each(mutations, function(mutation) {
+            var atrr = mutation.attributeName[METHOD_TO_LOWER_CASE]();
+            callback(atrr);
+          });
+        })
+        .observe(el, {
+          attributes: true,
+          attributeFilter: attrs
+        });
+      } else if (SUPPORTS_DOM_ATTR_MODIFIED) {
+        on(el, METHOD_DOM_ATTR_MODIFIED, function(e) {
+          var attr = e.attrName[METHOD_TO_LOWER_CASE]();
+          if (indexOf[METHOD_CALL](attrs, attr) > -1) {
+            callback(attr);
+          }
+        });
+      } else if (SUPPORTS_PROPERTYCHANGE) {
+        on(el, 'propertychange', function(e) {
+          var prop = e.propertyName[METHOD_TO_LOWER_CASE]();
+          if (indexOf[METHOD_CALL](attrs, prop) > -1) {
+            callback(prop);
+          }
+        });
+      } else {
+        // anything ?
+      }
+    }
 
+    function updateMeterStyle(meter) {
+      var result = meterCalculator(meter);
       try {
-        var valueElement = meter[METHOD_GET_ELEMENTS_BY_TAG_NAME](DIV_TAG)[2];
-        valueElement.className = level.className;
-        valueElement.style.width = level.percentage + '%';
+        var valueElement = meter[METHOD_GET_ELEMENTS_BY_TAG_NAME](DIV_TAG_NAME)[2];
+        valueElement.className = result.className;
+        valueElement.style.width = result.percentage + '%';
       } catch (_) {}
 
       return meter;
     }
 
-    // over write document.createElement
-    document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, function() {
-      var el = createElement[METHOD_APPLY](document, arguments);
-      if (isMeter(el)) {
-        polyfill(el);
-      }
-      return el;
-    });
+    // labels
+    function getMeterLables(meter) {
+      var assignedLables = [];
+      var i = 0;
 
-    function observerSubtree() {
-      // observe subtree
-      if (SUPPORTS_MUTATION_OBSERVER) {
-        var observer = new MutationObserver(function(mutations) {
-          each(mutations, function(mutation) {
-            polyfill(mutation.target);
-          });
-        });
+      each(labels, function(label) {
+        if (label.control === meter) {
+          assignedLables[i++] = label;
+          return;
+        }
+        var htmlFor = label.htmlFor;
+        if (!htmlFor) {
+          var labelMeters = label[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG_NAME);
+          if (indexOf[METHOD_CALL](labelMeters, meter) !== -1) {
+            assignedLables[i++] = label;
+          }
+        } else if (label.htmlFor === meter.id) {
+          assignedLables[i++] = label;
+        }
+      });
 
-        observer.observe(documentElement, {
-          subtree: true,
-          childList: true
-        });
-      } else if (SUPPORTS_DOM_NODE_INSERTED) {
-        on(documentElement, METHOD_DOM_NODE_INSERTED, function(e) {
-          polyfill(e.target);
-        });
-      } else {
-        // any idea ?
-      }
+      return assignedLables;
     }
 
     function polyfill(context) {
@@ -517,59 +577,32 @@
         });
       }
 
-      var meters = isMeter(context) ?
+      var meters = isElement(context, METER_TAG_NAME) ?
         [context] :
-        context[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG);
+        context[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG_NAME);
 
       each(meters, function(meter) {
         if (meter[POLYFILL_FLAG]) {
           return;
         }
 
-        // ie 8 throws
-        try {
-          meter[PROP_CONSTRUCTOR] = HTMLMeterElement;
-        } catch (_) {}
-
         // ie8 need clone meter might be a new node
         meter = createShadowDom(meter);
-        defineEtter(meter);
-        observerAttr(meter);
+        defineMeterProperties(meter);
+
+        observerAttributes(meter, METER_ATTRS, function(attr) {
+          triggerAttrChange(meter, attr);
+        });
 
         updateMeterStyle(meter);
-        meter[POLYFILL_FLAG] = VERSION;
-        meter[METHOD_SET_ATTRIBUTE](POLYFILL_FLAG, VERSION);
       });
     }
 
-    function isMeterProp(prop) {
-      return METER_PROPS.join(' ').indexOf(prop) > -1;
-    }
-
-    function observerAttr(meter) {
-      // observe subtree
-      if (SUPPORTS_MUTATION_OBSERVER) {
-        var observer = new MutationObserver(function(mutations) {
-          updateMeterStyle(meter);
-        });
-        observer.observe(meter, {
-          attributes: true,
-          attributeFilter: METER_PROPS
-        });
-      } else if (SUPPORTS_DOM_ATTR_MODIFIED) {
-        on(meter, METHOD_DOM_ATTR_MODIFIED, function(e) {
-          if (isMeterProp(e.attrName)) {
-            updateMeterStyle(meter);
-          }
-        });
-      } else if (SUPPORTS_PROPERTYCHANGE) {
-        on(meter, 'propertychange', function(e) {
-          if (isMeterProp(e.propertyName)) {
-            updateMeterStyle(meter);
-          }
-        });
+    function triggerAttrChange(meter, attr) {
+      if (attr === PROP_ID) {
+        assignLables(meter);
       } else {
-        // anything ?
+        updateMeterStyle(meter);
       }
     }
 
@@ -578,21 +611,21 @@
         // ie 8 fails on innerHTML meter
         var parent = meter.parentNode;
         if (parent) {
-          var meterClone = assignValues(createElement(METER_TAG), meter);
+          var meterClone = assignValues(createElement(METER_TAG_NAME), meter);
           parent.replaceChild(meterClone, meter);
           meter = meterClone;
 
           // remove </meter><//meter>
-          var slashMeters = parent[METHOD_GET_ELEMENTS_BY_TAG_NAME]('/' + METER_TAG);
+          var slashMeters = parent[METHOD_GET_ELEMENTS_BY_TAG_NAME]('/' + METER_TAG_NAME);
           each(slashMeters, function(slashMeter) {
-            parent.removeChild(slashMeter);
+            parent[METHOD_REMOVE_CHILD](slashMeter);
           });
 
           // another way to remove </meter><//meter>
           // var next = meter;
           // while (next = next.nextSibling) {
-          //   if (next.tagName.toUpperCase() === '/' + METER_TAG) {
-          //     parent.removeChild(next);
+          //   if (next.tagName[METHOD_TO_UPPER_CASE]() === '/' + METER_TAG_NAME) {
+          //     parent[METHOD_REMOVE_CHILD](next);
           //   }
           // }
         }
@@ -602,10 +635,14 @@
       return meter;
     }
 
-    function defineEtter(meter) {
+    function defineMeterProperties(meter) {
+      var METHOD_CLONE_NODE = 'cloneNode';
+      var properties = {};
+
       var propValues = {};
       var setAttribute = bind[METHOD_CALL](meter[METHOD_SET_ATTRIBUTE], meter);
       var cloneNode = bind[METHOD_CALL](meter[METHOD_CLONE_NODE], meter);
+      var removeAttribute = bind[METHOD_CALL](meter[METHOD_REMOVE_ATTRIBUTE], meter);
 
       each(METER_PROPS, function(prop) {
         propValues[prop] = parseValue(meter[METHOD_GET_ATTRIBUTE](prop));
@@ -619,7 +656,7 @@
 
       function getSetter(prop) {
         return function(value) {
-          if (isVoidValue(value)) {
+          if (!isValidValue(value)) {
             var errorMessage = isFirefox ?
               'Value being assigned to ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.' + prop + ' is not a finite floating-point value.' :
               'Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.';
@@ -639,42 +676,188 @@
 
       if (!SUPPORTS_ATTERS_AS_PROPS) {
         each(METER_PROPS, function(prop) {
-          defineProperty(meter, prop, {
+          properties[prop] = {
             get: getGetter(prop),
             set: getSetter(prop)
-          });
+          };
         });
       }
 
-      var attributeSetter = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
+      properties[PROP_LABELS] = {
+        writeable: false,
+        value: getMeterLables(meter)
+      };
+
+      var methodSetAttribute = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
         setAttribute(attr, value);
-        var prop = attr.toLowerCase();
-        if (isMeterProp(prop)) {
+        var prop = attr[METHOD_TO_LOWER_CASE]();
+        if (!isMeterAttr(prop)) {
+          return;
+        }
+        if (prop === PROP_ID) {
+          triggerAttrChange(meter, prop);
+        } else {
           var value = parseValue(value);
           if (propValues[prop] !== value) {
             propValues[prop] = parseValue(value);
-            updateMeterStyle(meter);
+            triggerAttrChange(meter, prop);
           }
         }
       });
 
-      defineProperty(meter, METHOD_SET_ATTRIBUTE, {
-        value: attributeSetter
+      if (!SUPPORTS_ATTERS_AS_PROPS) {
+        properties[METHOD_SET_ATTRIBUTE] = {
+          enumerable: false,
+          value: methodSetAttribute
+        };
+      }
+
+      var methodRemoveAttribute = createNativeFunction(METHOD_REMOVE_ATTRIBUTE, function(attr) {
+        removeAttribute(attr);
+        var prop = attr[METHOD_TO_LOWER_CASE]();
+        if (!isMeterAttr(attr)) {
+          return;
+        }
+        if (prop === PROP_ID) {
+          triggerAttrChange(meter, prop);
+        } else {
+          propValues[prop] = null;
+          triggerAttrChange(meter, prop);
+        }
       });
 
-      var cloneNodeMethd = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
+      properties[METHOD_REMOVE_ATTRIBUTE] = {
+        enumerable: false,
+        value: methodRemoveAttribute
+      };
+
+      var methodCloneNode = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
         var clone = cloneNode(false);
-        clone.removeAttribute(POLYFILL_FLAG);
+        if (SUPPORTS_ATTERS_AS_PROPS) {
+          clone[METHOD_REMOVE_ATTRIBUTE](POLYFILL_FLAG);
+        }
         polyfill(clone);
         return clone;
       });
 
-      defineProperty(meter, METHOD_CLONE_NODE, {
-        value: cloneNodeMethd
+      properties[METHOD_CLONE_NODE] = {
+        enumerable: false,
+        value: methodCloneNode
+      };
+
+      properties[POLYFILL_FLAG] = {
+        enumerable: false,
+        writeable: false,
+        value: VERSION
+      };
+
+      properties[PROP_CONSTRUCTOR] = {
+        enumerable: false,
+        value: HTMLMeterElement
+      };
+
+
+      for (var prop in properties) {
+        if (properties.hasOwnProperty(prop)) {
+          defineProperty(meter, prop, properties[prop]);
+        }
+      }
+      meter[PROP_PROTO] = HTMLMeterElement.prototype;
+    }
+
+    function assignLables(meter) {
+      each(meter ? [meter] : meters, function(meter) {
+        var labels = getMeterLables(meter);
+        if (meter.labels.length || labels.length) {
+          defineProperty(meter, PROP_LABELS, {
+            enumerable: true,
+            writeable: false,
+            value: labels
+          });
+        }
       });
     }
 
-    (function checkReady() {
+    // over write document.createElement
+    document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, function() {
+      var el = createElement[METHOD_APPLY](document, arguments);
+      if (isElement(el, METER_TAG_NAME)) {
+        polyfill(el);
+      }
+      return el;
+    });
+
+    var observedLables = [];
+    function observerLabels() {
+      each(labels, function(label) {
+        if (indexOf[METHOD_CALL](observedLables, label) > -1) {
+          return;
+        }
+        observerAttributes(label, LABEL_ATTRS, function() {
+          assignLables();
+        });
+        observedLables.push(label);
+      });
+    }
+
+    function observerDocument() {
+      if (SUPPORTS_MUTATION_OBSERVER) {
+        // observe subtree
+        new MutationObserver(function(mutations) {
+          each(mutations, function(mutation) {
+            polyfill(mutation.target);
+          });
+
+          observerLabels();
+          assignLables();
+        })
+        .observe(documentElement, {
+          subtree: true,
+          childList: true
+        });
+      } else {
+        if (SUPPORTS_DOM_NODE_INSERTED) {
+          on(documentElement, METHOD_DOM_NODE_INSERTED, function(e) {
+            polyfill(e.target);
+            observerLabels();
+            assignLables();
+          });
+        } else {
+          setInterval(function() {
+            each(labels, function(label) {
+              if (indexOf[METHOD_CALL](observedLables, label) === -1) {
+                // new label inserted
+                observerLabels();
+                assignLables();
+              }
+            });
+          }, TIMEOUT_FREQUENCY);
+        }
+
+        if (SUPPORTS_DOM_NODE_REMOVED) {
+          on(documentElement, METHOD_DOM_NODE_REMOVED, function(e) {
+            setTimeout(assignLables, TIMEOUT_FREQUENCY);
+          });
+        } else {
+          setInterval(function() {
+            each(observedLables, function(label, index) {
+              if (indexOf[METHOD_CALL](labels, label) === -1) {
+                // label has been removed
+                observedLables.splice(index, 1);
+                assignLables();
+              }
+            });
+          }, TIMEOUT_FREQUENCY);
+        }
+      }
+
+      observerLabels();
+    }
+
+    (function() {
+      var isReady = false;
+      var isTop = false;
+
       function setReady() {
         isReady = true;
       }
@@ -685,12 +868,6 @@
         }
       }
 
-      on(document, 'DOMContentLoaded', setReady);
-      on(window, 'load', setReady);
-      on(document, 'readystatechange', completed);
-      completed();
-
-      var isTop = false;
       try {
         isTop = isNull(window.frameElement);
       } catch (_) {}
@@ -705,15 +882,20 @@
           }
         })();
       }
-    })();
 
-    (function polyfillWhenReady() {
-      if (isReady) {
-        polyfill();
-        observerSubtree();
-      } else {
-        setTimeout(polyfillWhenReady, TIMEOUT_FREQUENCY);
-      }
+      on(document, 'DOMContentLoaded', setReady);
+      on(window, 'load', setReady);
+      on(document, 'readystatechange', completed);
+      completed();
+
+      (function polyfillWhenReady() {
+        if (isReady) {
+          polyfill();
+          observerDocument();
+        } else {
+          setTimeout(polyfillWhenReady, TIMEOUT_FREQUENCY);
+        }
+      })();
     })();
 
     return polyfill;
@@ -725,7 +907,7 @@
   meterPolyfill.LEVEL_SUBOPTIMUM = LEVEL_SUBOPTIMUM;
   meterPolyfill.LEVEL_OPTIMUM = LEVEL_OPTIMUM;
   meterPolyfill.LEVEL_SUBSUBOPTIMUM = LEVEL_SUBSUBOPTIMUM;
-  meterPolyfill.calc = calcLevel;
+  meterPolyfill.calc = meterCalculator;
 
   return meterPolyfill;
 });

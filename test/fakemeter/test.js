@@ -2,8 +2,8 @@
   'use strict';
 
   var HTML_METER_ELEMENT_CONSTRICTOR_NAME = 'HTML' +
-      METER_TAG.charAt(0).toUpperCase() +
-      METER_TAG.slice(1).toLowerCase() +
+      METER_TAG_NAME.charAt(0).toUpperCase() +
+      METER_TAG_NAME.slice(1).toLowerCase() +
       'Element';
   var supportMeter = meterPolyfill.support;
   var test = {};
@@ -411,16 +411,11 @@
     });
   })();
 
-
   // min
   (function() {
     var cases = [];
-    var prop = {min: .4};
-    each([.4, .5, .7], function(value) {
-      cases.push(assign({}, prop, {
-        value: value
-      }));
-    });
+    cases.push({min: -1});
+    cases.push({min: -2, max: -1});
 
     testCase.push({
       'name': 'min1',
@@ -428,10 +423,11 @@
     });
   })();
 
+
   // min
   (function() {
     var cases = [];
-    var prop = {min: .5};
+    var prop = {min: .4};
     each([.4, .5, .7], function(value) {
       cases.push(assign({}, prop, {
         value: value
@@ -447,6 +443,22 @@
   // min
   (function() {
     var cases = [];
+    var prop = {min: .5};
+    each([.4, .5, .7], function(value) {
+      cases.push(assign({}, prop, {
+        value: value
+      }));
+    });
+
+    testCase.push({
+      'name': 'min3',
+      'cases': cases
+    });
+  })();
+
+  // min
+  (function() {
+    var cases = [];
     var prop = {min: 1};
     each([.4, .5, .7, 1], function(value) {
       cases.push(assign({}, prop, {
@@ -455,7 +467,7 @@
     });
 
     testCase.push({
-      'name': 'min3',
+      'name': 'min4',
       'cases': cases
     });
   })();
@@ -471,7 +483,7 @@
     });
 
     testCase.push({
-      'name': 'min4',
+      'name': 'min5',
       'cases': cases
     });
   })();
@@ -613,16 +625,16 @@
         window[HTML_METER_ELEMENT_CONSTRICTOR_NAME]
       ],
       [
-        'document.createElement(\'' + METER_TAG + '\').constructor',
+        'document.createElement(\'' + METER_TAG_NAME + '\').constructor',
         function () {
-          return document.createElement(METER_TAG).constructor;
+          return document.createElement(METER_TAG_NAME).constructor;
         },
         window[HTML_METER_ELEMENT_CONSTRICTOR_NAME]
       ],
       [
         'meter.max = "010"',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.max = '010';
           return parseFloat(meter.max);
         },
@@ -631,7 +643,7 @@
       [
         'meter.max = 010',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.max = 8; //010;
           return parseFloat(meter.max);
         },
@@ -640,7 +652,7 @@
       [
         'meter.max = "1e2"',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.max = '1e2';
           return parseFloat(meter.max);
         },
@@ -649,7 +661,7 @@
       [
         'meter.max = 1e2',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.max = 1e2;
           return parseFloat(meter.max);
         },
@@ -658,7 +670,7 @@
       [
         'meter.max = null',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.max = null;
           return parseFloat(meter.max);
         },
@@ -667,7 +679,7 @@
       [
         'meter.max = "fisker"',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           try {
             meter.max = 'fisker';
           } catch(e) {
@@ -681,7 +693,7 @@
       [
         'meter.setAttribute("max", "010")',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.setAttribute('max', '010');
           return parseFloat(meter.max);
         },
@@ -690,7 +702,7 @@
       [
         'meter.setAttribute("max", "1e2")',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.setAttribute('max', '1e2');
           return parseFloat(meter.max);
         },
@@ -699,7 +711,7 @@
       [
         'meter.setAttribute("max", "null")',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.setAttribute('max', 'null');
           return parseFloat(meter.max);
         },
@@ -708,7 +720,7 @@
       [
         'meter.setAttribute("max", null)',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.setAttribute('max', null);
           return parseFloat(meter.max);
         },
@@ -717,7 +729,7 @@
       [
         'meter.setAttribute("max", "fisker")',
         function () {
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.setAttribute('max', 'fisker');
           return parseFloat(meter.max);
         },
@@ -727,7 +739,7 @@
         'meter.value = 2;meter.value;meter.max=10;meter.value;',
         function () {
           var values = [];
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.value = 2;
           values.push(meter.value);
           meter.max = 10;
@@ -740,7 +752,7 @@
         'meter.value = -1;meter.value;meter.min=-10;meter.value;',
         function () {
           var values = [];
-          var meter = document.createElement(METER_TAG);
+          var meter = document.createElement(METER_TAG_NAME);
           meter.value = -1;
           values.push(meter.value);
           meter.min = -10;
@@ -754,8 +766,8 @@
         function () {
           var div = document.createElement('div');
           body.appendChild(div);
-          div.innerHTML = '<' + METER_TAG + '></' + METER_TAG + '>';
-          var meter = div.getElementsByTagName(METER_TAG)[0];
+          div.innerHTML = '<' + METER_TAG_NAME + '></' + METER_TAG_NAME + '>';
+          var meter = div.getElementsByTagName(METER_TAG_NAME)[0];
           var max = parseFloat(meter.max);
           body.removeChild(div);
           return max === 1;
@@ -765,7 +777,7 @@
       [
         'meter.cloneNode().max',
         function () {
-          var meter = document.createElement(METER_TAG).cloneNode();
+          var meter = document.createElement(METER_TAG_NAME).cloneNode();
           return parseFloat(meter.max);
         },
         1
@@ -773,7 +785,7 @@
       [
         'meter.cloneNode(true).max',
         function () {
-          var meter = document.createElement(METER_TAG).cloneNode(true);
+          var meter = document.createElement(METER_TAG_NAME).cloneNode(true);
           return parseFloat(meter.max);
         },
         1
@@ -821,7 +833,7 @@
           '<tr>',
             '<td>' + (index++) + '</td>',
             '<td>' + buildMeter('meter', test) + '</td>',
-            '<td>' + buildMeter(METER_TAG, test) + '</td>',
+            '<td>' + buildMeter(METER_TAG_NAME, test) + '</td>',
             '<td><span class="color-indicator ' + level.className + '"></span></td>',
             '<td>',
               '<span class="percentage-indicator">',
