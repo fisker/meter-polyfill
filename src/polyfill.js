@@ -87,8 +87,22 @@
     return isUndefined(obj) || isNaN(floatValue) || !isFinite(floatValue);
   }
 
-  function getPropValue(meter, prop) {
-    var value = meter[prop];
+  function parseValue(value, valueForNull) {
+    if (isUndefined(valueForNull)) {
+      valueForNull = null;
+    }
+    return isVoidValue(value) || isNull(value) ? valueForNull : parseFloat(value);
+  }
+
+  function assignValues(target, source) {
+    each(METER_PROPS, function(prop) {
+      target[prop] = parseValue(source[prop]);
+    });
+    return target;
+  }
+
+  function getPropValue(propValues, prop) {
+    var value = propValues[prop];
     var isNullValue = isNull(value);
     var min;
     var max;
@@ -101,39 +115,39 @@
         break;
 
       case PROP_MAX:
-        min = getPropValue(meter, PROP_MIN);
+        min = getPropValue(propValues, PROP_MIN);
         value = isNullValue ?
           mathMax(min, METER_INITAL_VALUES[PROP_MAX]) :
           mathMax(min, value);
         break;
 
       case PROP_LOW:
-        min = getPropValue(meter, PROP_MIN);
+        min = getPropValue(propValues, PROP_MIN);
         value = isNullValue ?
           min :
-          between(value, min, getPropValue(meter, PROP_MAX));
+          between(value, min, getPropValue(propValues, PROP_MAX));
         break;
 
       case PROP_HIGH:
-        max = getPropValue(meter, PROP_MAX);
+        max = getPropValue(propValues, PROP_MAX);
         value = isNullValue ?
           max :
-          between(value, getPropValue(meter, PROP_LOW), max);
+          between(value, getPropValue(propValues, PROP_LOW), max);
         break;
 
       case PROP_OPTIMUM:
-        min = getPropValue(meter, PROP_MIN);
-        max = getPropValue(meter, PROP_MAX);
+        min = getPropValue(propValues, PROP_MIN);
+        max = getPropValue(propValues, PROP_MAX);
         value = isNullValue ?
           (max - min) / 2 + min :
           between(value, min, max);
         break;
 
       case PROP_VALUE:
-        min = getPropValue(meter, PROP_MIN);
+        min = getPropValue(propValues, PROP_MIN);
         value = isNullValue ?
           min :
-          between(value, min, getPropValue(meter, PROP_MAX));
+          between(value, min, getPropValue(propValues, PROP_MAX));
         break;
 
       default:
@@ -142,25 +156,8 @@
     return value;
   }
 
-  function fixProps(propValues) {
-    each(METER_PROPS, function(prop) {
-      var value = propValues[prop];
-      if (isVoidValue(value)) {
-        value = null;
-      }
-      if (propValues[prop] !== value) {
-        propValues[prop] = value;
-      }
-    });
-    return propValues;
-  }
-
   function calcLevel(meter) {
-    var propValues = {};
-    each(METER_PROPS, function(prop) {
-      propValues[prop] = meter[prop];
-    });
-    propValues = fixProps(propValues);
+    var propValues = assignValues({}, meter);
 
     var min = getPropValue(propValues, PROP_MIN);
     var max = getPropValue(propValues, PROP_MAX);
@@ -222,6 +219,12 @@
     }
 
     return {
+      min: min,
+      max: max,
+      low: low,
+      high: high,
+      optimum: optimum,
+      value: value,
       percentage: percentage,
       level: level,
       className: METER_VALUE_CLASSES[level]
@@ -243,10 +246,11 @@
     var METHOD_ADD_EVENT_LISTENER = 'addEventListener';
     var METHOD_ATTACH_EVENT = 'attachEvent';
     var METHOD_GET_ELEMENTS_BY_TAG_NAME = 'getElementsByTagName';
-    var METHOD_PROTOTYPE = 'prototype';
-    var METHOD_CONSTRUCTOR = 'constructor';
     var METHOD_CALL = 'call';
     var METHOD_APPLY = 'apply';
+
+    var PROP_PROTOTYPE = 'prototype';
+    var PROP_CONSTRUCTOR = 'constructor';
 
     var DIV_TAG = 'DIV';
 
@@ -292,8 +296,8 @@
     }
 
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-    var bind = Function[METHOD_PROTOTYPE].bind || function(oThis) {
-      var slice = Array[METHOD_PROTOTYPE].slice;
+    var bind = Function[PROP_PROTOTYPE].bind || function(oThis) {
+      var slice = Array[PROP_PROTOTYPE].slice;
       var args = slice[METHOD_CALL](arguments, 1);
       var fnToBind = this;
       var NOOP = function() {};
@@ -301,13 +305,13 @@
         return fnToBind[METHOD_APPLY](
           this instanceof NOOP ? this : oThis || this,
           args.concat(slice[METHOD_CALL](arguments))
-          );
+        );
       };
 
-      if (this[METHOD_PROTOTYPE]) {
-        NOOP[METHOD_PROTOTYPE] = this[METHOD_PROTOTYPE];
+      if (this[PROP_PROTOTYPE]) {
+        NOOP[PROP_PROTOTYPE] = this[PROP_PROTOTYPE];
       }
-      fnBound[METHOD_PROTOTYPE] = new NOOP();
+      fnBound[PROP_PROTOTYPE] = new NOOP();
 
       return fnBound;
     };
@@ -321,15 +325,15 @@
     // Reference: http://es5.github.io/#x15.2.3.5
     var create = Object.create || (function() {
       function Temp() {}
-      var hasOwn = Object[METHOD_PROTOTYPE].hasOwnProperty;
+      var hasOwn = Object[PROP_PROTOTYPE].hasOwnProperty;
 
       return function (O) {
         if (typeof O !== 'object') {
-          throwTypeError('Object ' + METHOD_PROTOTYPE + ' may only be an Object or null');
+          throwTypeError('Object ' + PROP_PROTOTYPE + ' may only be an Object or null');
         }
-        Temp[METHOD_PROTOTYPE] = O;
+        Temp[PROP_PROTOTYPE] = O;
         var obj = new Temp();
-        Temp[METHOD_PROTOTYPE] = null;
+        Temp[PROP_PROTOTYPE] = null;
         if (arguments.length > 1) {
           var Properties = Object(arguments[1]);
           for (var prop in Properties) {
@@ -342,12 +346,10 @@
       };
     })();
 
-    var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
-      'HTML',
-      METER_TAG.charAt(0).toUpperCase(),
-      METER_TAG.slice(1).toLowerCase(),
-      'Element'
-    ].join('');
+    var HTML_METER_ELEMENT_CONSTRICTOR_NAME = 'HTML' +
+      METER_TAG.charAt(0).toUpperCase() +
+      METER_TAG.slice(1).toLowerCase() +
+      'Element';
 
     // ie 8 document.createElement is not a function
     // ie 7 document.createElement.apply is undefined
@@ -380,21 +382,21 @@
 
     var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
       var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function() {
-        throwTypeError('Illegal ' + METHOD_CONSTRUCTOR + '' + (isFirefox ? '.' : ''));
+        throwTypeError('Illegal ' + PROP_CONSTRUCTOR + '' + (isFirefox ? '.' : ''));
       });
 
       // ie 8 constructor is null
       var prototype = (
         window.HTMLElement ||
-        meterElement[METHOD_CONSTRUCTOR] ||
+        meterElement[PROP_CONSTRUCTOR] ||
         window.Element ||
         window.Node ||
-        NOOP)[METHOD_PROTOTYPE];
+        NOOP)[PROP_PROTOTYPE];
 
       prototype = create(prototype);
 
-      HTMLMeterElement[METHOD_PROTOTYPE] = prototype;
-      HTMLMeterElement[METHOD_PROTOTYPE][METHOD_CONSTRUCTOR] = HTMLMeterElement;
+      HTMLMeterElement[PROP_PROTOTYPE] = prototype;
+      HTMLMeterElement[PROP_PROTOTYPE][PROP_CONSTRUCTOR] = HTMLMeterElement;
 
       return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = HTMLMeterElement;
     })();
@@ -411,20 +413,23 @@
     var SUPPORTS_ATTERS_AS_PROPS = meterElement[METHOD_GET_ATTRIBUTE](METER_TAG) === METER_TAG; // (IE8- bug)
     var SUPPORTS_HAS_ATTRIBUTE = !!meterElement[METHOD_HAS_ATTRIBUTE];
     var SUPPORTS_PROPERTYCHANGE = 'onpropertychange' in document;
-    var SUPPORTS_DOM_NODE_INSERTED;
-    var SUPPORTS_DOM_ATTR_MODIFIED;
+    var SUPPORTS_DOM_NODE_INSERTED = false;
+    var SUPPORTS_DOM_ATTR_MODIFIED = false;
 
     if (!SUPPORTS_MUTATION_OBSERVER) {
       var testDiv = createElement(DIV_TAG);
       var testChild = createElement(DIV_TAG);
+
       on(testDiv, METHOD_DOM_NODE_INSERTED, function() {
         SUPPORTS_DOM_NODE_INSERTED = true;
       });
-      testDiv[METHOD_APPEND_CHILD](testChild);
       on(testDiv, METHOD_DOM_ATTR_MODIFIED, function() {
         SUPPORTS_DOM_ATTR_MODIFIED = true;
       });
+
+      testDiv[METHOD_APPEND_CHILD](testChild);
       testDiv[METHOD_SET_ATTRIBUTE](PROP_MIN, 1);
+
       testChild = null;
       testDiv = null;
     }
@@ -506,39 +511,34 @@
 
     function polyfill(context) {
       context = context || documentElement;
-      var meters = [];
-      if (isMeter(context)) {
-        meters = [context];
-      } else if (context && context.length) {
-        each(context, function(context) {
+      if (context.length) {
+        return each(context, function(context) {
           polyfill(context);
         });
-        return;
-      } else {
-        meters = context[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG);
       }
+
+      var meters = isMeter(context) ?
+        [context] :
+        context[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG);
 
       each(meters, function(meter) {
         if (meter[POLYFILL_FLAG]) {
           return;
         }
 
-        if (!hasAttribute(meter, POLYFILL_FLAG)) {
-          // ie 8 throws
-          try {
-            meter[METHOD_CONSTRUCTOR] = HTMLMeterElement;
-          } catch (_) {}
+        // ie 8 throws
+        try {
+          meter[PROP_CONSTRUCTOR] = HTMLMeterElement;
+        } catch (_) {}
 
-          // ie8 need clone meter might be a new node
-          meter = createShadowDom(meter);
-          defineEtter(meter);
-          observerAttr(meter);
-
-          meter[METHOD_SET_ATTRIBUTE](POLYFILL_FLAG, VERSION);
-        }
+        // ie8 need clone meter might be a new node
+        meter = createShadowDom(meter);
+        defineEtter(meter);
+        observerAttr(meter);
 
         updateMeterStyle(meter);
         meter[POLYFILL_FLAG] = VERSION;
+        meter[METHOD_SET_ATTRIBUTE](POLYFILL_FLAG, VERSION);
       });
     }
 
@@ -550,9 +550,7 @@
       // observe subtree
       if (SUPPORTS_MUTATION_OBSERVER) {
         var observer = new MutationObserver(function(mutations) {
-          each(mutations, function(mutation) {
-            updateMeterStyle(mutation.target);
-          });
+          updateMeterStyle(meter);
         });
         observer.observe(meter, {
           attributes: true,
@@ -561,13 +559,13 @@
       } else if (SUPPORTS_DOM_ATTR_MODIFIED) {
         on(meter, METHOD_DOM_ATTR_MODIFIED, function(e) {
           if (isMeterProp(e.attrName)) {
-            updateMeterStyle(e.target);
+            updateMeterStyle(meter);
           }
         });
       } else if (SUPPORTS_PROPERTYCHANGE) {
         on(meter, 'propertychange', function(e) {
           if (isMeterProp(e.propertyName)) {
-            updateMeterStyle(e.srcElement);
+            updateMeterStyle(meter);
           }
         });
       } else {
@@ -580,15 +578,8 @@
         // ie 8 fails on innerHTML meter
         var parent = meter.parentNode;
         if (parent) {
-          var meterClone = createElement(METER_TAG);
-          each(METER_PROPS, function(prop) {
-            var value = meter[prop];
-            if (!isVoidValue(value)) {
-              meterClone[prop] = meter[prop];
-            }
-          });
+          var meterClone = assignValues(createElement(METER_TAG), meter);
           parent.replaceChild(meterClone, meter);
-          meterClone.innerHTML = METER_SHADOW_HTML;
           meter = meterClone;
 
           // remove </meter><//meter>
@@ -597,7 +588,7 @@
             parent.removeChild(slashMeter);
           });
 
-          // anotherway remove </meter><//meter>
+          // another way to remove </meter><//meter>
           // var next = meter;
           // while (next = next.nextSibling) {
           //   if (next.tagName.toUpperCase() === '/' + METER_TAG) {
@@ -605,9 +596,9 @@
           //   }
           // }
         }
-      } else {
-        meter.innerHTML = METER_SHADOW_HTML;
       }
+
+      meter.innerHTML = METER_SHADOW_HTML;
       return meter;
     }
 
@@ -617,10 +608,8 @@
       var cloneNode = bind[METHOD_CALL](meter[METHOD_CLONE_NODE], meter);
 
       each(METER_PROPS, function(prop) {
-        propValues[prop] = meter[METHOD_GET_ATTRIBUTE](prop);
+        propValues[prop] = parseValue(meter[METHOD_GET_ATTRIBUTE](prop));
       });
-
-      propValues = fixProps(propValues);
 
       function getGetter(prop) {
         return function() {
@@ -637,11 +626,13 @@
             throwTypeError(errorMessage);
           }
 
-          value = isNull(value) ? 0 : parseFloat(value);
+          value = parseValue(value, 0);
 
-          setAttribute(prop, value);
-          propValues[prop] = value;
-          updateMeterStyle(meter);
+          if (propValues[prop] !== value) {
+            setAttribute(prop, value);
+            propValues[prop] = value;
+            updateMeterStyle(meter);
+          }
           return value;
         };
       }
@@ -657,13 +648,14 @@
 
       var attributeSetter = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
         setAttribute(attr, value);
-        attr = attr.toLowerCase();
-        each(METER_PROPS, function(prop) {
-          if (prop === attr) {
-            propValues[prop] = isVoidValue(value) || isNull(value) ? null : parseFloat(value);
+        var prop = attr.toLowerCase();
+        if (isMeterProp(prop)) {
+          var value = parseValue(value);
+          if (propValues[prop] !== value) {
+            propValues[prop] = parseValue(value);
             updateMeterStyle(meter);
           }
-        });
+        }
       });
 
       defineProperty(meter, METHOD_SET_ATTRIBUTE, {
@@ -683,24 +675,21 @@
     }
 
     (function checkReady() {
+      function setReady() {
+        isReady = true;
+      }
+
       function completed() {
         if (document.readyState === 'complete') {
-          isReady = true;
+          setReady();
         }
       }
+
+      on(document, 'DOMContentLoaded', setReady);
+      on(window, 'load', setReady);
+      on(document, 'readystatechange', completed);
       completed();
 
-      on(document, 'DOMContentLoaded', function() {
-        isReady = true;
-      });
-
-      on(window, 'load', function() {
-        isReady = true;
-      });
-
-      on(document, 'readystatechange', completed);
-
-      // uglify will break window without a wrapper
       var isTop = false;
       try {
         isTop = isNull(window.frameElement);
@@ -710,9 +699,9 @@
         (function doScroll() {
           try {
             documentElement.doScroll();
-            isReady = true;
+            setReady();
           } catch (_) {
-            return setTimeout(doScroll, TIMEOUT_FREQUENCY);
+            setTimeout(doScroll, TIMEOUT_FREQUENCY);
           }
         })();
       }

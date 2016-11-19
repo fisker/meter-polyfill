@@ -799,7 +799,7 @@
     var index = 1;
     each(testCase, function(category) {
       each(category.cases, function(test) {
-        var level = meterPolyfill.calc(assign({}, test));
+        var level = meterPolyfill.calc(test);
         html.push([
           '<tr>',
             '<td>' + (index++) + '</td>',

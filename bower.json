@@ -1,0 +1,20 @@
+{
+  "name": "meter-polyfill",
+  "description": "Polyfill for the meter element",
+  "main": "dist/polyfill.js",
+  "authors": [
+    "[object Object]"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "meter"
+  ],
+  "homepage": "https://github.com/fisker/meter-polyfill",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

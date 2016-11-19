@@ -11,8 +11,8 @@
 3. ie<9 might not work completely
 
 4. innerHTML createMeter is not polyfilled imidiately. 
-   1. call `meterPolyfill.polyfill(parentNode)` manually
-   2. it will be polyfilled after parentNode rendered in the dom tree
+   1. call `meterPolyfill(parentNode)` manually.
+   2. render to the dom tree, it will be polyfilled.
 
 ## test
 
@@ -24,22 +24,28 @@ https://fisker.github.io/meter-polyfill/test/fakemeter/meter.html
 
 ## api
 ```
-  meterPolyfill(document.getElementById('fisker')); // dom contains meter
-  meterPolyfill(document.getElementsByTagName('div')); // domlist contains meter
-  meterPolyfill(); // document contains meter
+meterPolyfill(); // document contains meter
+meterPolyfill(document.getElementById('container')); // dom contains meter
+meterPolyfill(document.getElementsByTagName('div')); // domlist contains meter
+meterPolyfill(meter); // meter
+meterPolyfill(document.getElementsByTagName('meter')); // meters
+meterPolyfill([meter1,meter2])// arrays
+meterPolyfill([div1,div2])// arrays
 
-  meterPolyfill.version // version number
-  meterPolyfill.support // native `meter` support
-  meterPolyfill.CLASSES // class list of value element
-  meterPolyfill.LEVEL_SUBOPTIMUM // LEVEL_SUBOPTIMUM;
-  meterPolyfill.LEVEL_OPTIMUM // LEVEL_OPTIMUM;
-  meterPolyfill.LEVEL_SUBSUBOPTIMUM // LEVEL_SUBSUBOPTIMUM;
-  meterPolyfill.calc // calculate meter/propValue
+meterPolyfill.version // version number
+meterPolyfill.support // native `meter` support
+meterPolyfill.CLASSES // class list of value element
+meterPolyfill.LEVEL_SUBOPTIMUM // LEVEL_SUBOPTIMUM;
+meterPolyfill.LEVEL_OPTIMUM // LEVEL_OPTIMUM;
+meterPolyfill.LEVEL_SUBSUBOPTIMUM // LEVEL_SUBSUBOPTIMUM;
+meterPolyfill.calc // calculate meter/propValue
 
-  var calcResult = meterPolyfill.calc(meter);
-  calcResult.percentage // value width percentage(0-100)
-  calcResult.level // value level 
-  calcResult.className // value className
+var calcResult = meterPolyfill.calc(meter); // meter
+var calcResult = meterPolyfill.calc(propValues); // Object propValues
+calcResult[min/max/low/high/optimum/value] // for browsers not support getters
+calcResult.percentage // value width percentage(0-100)
+calcResult.level // value level 
+calcResult.className // value className
 
 ```
 
