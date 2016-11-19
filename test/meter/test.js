@@ -1,20 +1,14 @@
 (function() {
   'use strict';
 
-  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = [
-    'HTML',
-    METER_TAG.replace(/^(.)(.*)$/,function(_, $1, $2){
-        return $1.toUpperCase() + $2.toLowerCase()
-    }),
-    'Element'].join('');
-  var supportMeter = document.createElement('meter').max === 1;
+  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = 'HTML' +
+      METER_TAG.charAt(0).toUpperCase() +
+      METER_TAG.slice(1).toLowerCase() +
+      'Element';
+  var supportMeter = meterPolyfill.support;
   var test = {};
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
-  var METER_VALUE_CLASSES = meterPolyfill.CLASSES;
-  var LEVEL_SUBOPTIMUM = meterPolyfill.LEVEL_SUBOPTIMUM;
-  var LEVEL_OPTIMUM = meterPolyfill.LEVEL_OPTIMUM;
-  var LEVEL_SUBSUBOPTIMUM = meterPolyfill.LEVEL_SUBSUBOPTIMUM;
   var body = document.body || document.getElementsByTagName('body')[0];
 
   function HTMLEncode(s) {
@@ -671,6 +665,20 @@
         0
       ],
       [
+        'meter.max = "fisker"',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          try {
+            meter.max = 'fisker';
+          } catch(e) {
+            return e.message;
+          }
+        },
+        isFirefox ?
+          'Value being assigned to ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.max is not a finite floating-point value.':
+          'Failed to set the \'max\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.'
+      ],
+      [
         'meter.setAttribute("max", "010")',
         function () {
           var meter = document.createElement(METER_TAG);
@@ -702,6 +710,15 @@
         function () {
           var meter = document.createElement(METER_TAG);
           meter.setAttribute('max', null);
+          return parseFloat(meter.max);
+        },
+        1
+      ],
+      [
+        'meter.setAttribute("max", "fisker")',
+        function () {
+          var meter = document.createElement(METER_TAG);
+          meter.setAttribute('max', 'fisker');
           return parseFloat(meter.max);
         },
         1
