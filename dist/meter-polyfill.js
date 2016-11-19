@@ -1,6 +1,6 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.3.2
+ * @version v1.3.3
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
@@ -20,7 +20,7 @@
   'use strict';
 
   var METER_TAG = 'METER';
-  var VERSION = '1.3.2';
+  var VERSION = '1.3.3';
 
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 

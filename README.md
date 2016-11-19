@@ -1,18 +1,19 @@
-# Polyfill for the meter element
+# meter-polyfill
+>
+Polyfill for the meter element
 
-## known issue: 
+[![npm](https://img.shields.io/npm/v/meter-polyfill.svg?style=flat-square)](https://www.npmjs.com/package/meter-polyfill) 
+[![npm](https://img.shields.io/npm/l/meter-polyfill.svg?style=flat-square)](https://www.npmjs.com/package/meter-polyfill)
 
-1. uglifyjs(v2.7.3) breaks code for ie < 9
+### NPM
+```
+npm install --save meter-polyfill
+````
 
-   use `meter-polyfill.js` instead. until uglifyjs fix this bug
-
-2. currently firefox shows diffently from chrome
-
-3. ie<9 might not work completely
-
-4. innerHTML createMeter is not polyfilled imidiately. 
-   1. call `meterPolyfill(parentNode)` manually.
-   2. render to the dom tree, it will be polyfilled.
+### Bower
+```
+bower install --save meter-polyfill
+````
 
 ## test
 
@@ -52,8 +53,8 @@ calcResult.className // value className
 ## usage
 
 ```
-<link rel="stylesheet" href="meter-polyfill.min.css">
-<script src="path/to/meter-polyfill.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.css">
+<script src="https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.js"></script>
 <script>
 console.log(meterPolyfill);
 </script>
@@ -61,11 +62,25 @@ console.log(meterPolyfill);
 
 amd loader
 ```
-<link rel="stylesheet" href="meter-polyfill.min.css">
+<link rel="stylesheet" href="https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.css">
 <script src="require.min.js"></script>
 <script>
-require(['path/to/meter-polyfill.min.js'], function(meterPolyfill) {
+require(['https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.js'], function(meterPolyfill) {
   console.log(meterPolyfill);
 });
 </script>
 ```
+
+## known issue: 
+
+1. uglifyjs(v2.7.3) breaks code for ie < 9
+
+   use `meter-polyfill.js` instead. until uglifyjs fix this bug
+
+2. currently firefox shows diffently from chrome
+
+3. ie<9 might not work completely
+
+4. innerHTML createMeter is not polyfilled imidiately. 
+   1. call `meterPolyfill(parentNode)` manually.
+   2. render to the dom tree, it will be polyfilled.

@@ -13,7 +13,7 @@
   'use strict';
 
   var METER_TAG = 'FAKEMETER';
-  var VERSION = '1.3.2';
+  var VERSION = '1.3.3';
 
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
