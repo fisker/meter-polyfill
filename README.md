@@ -71,7 +71,7 @@ require(['https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.js'], functio
 </script>
 ```
 
-## known issue: 
+## known issue(s): 
 
 1. uglifyjs(v2.7.3) breaks code for ie < 9
 
