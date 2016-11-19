@@ -26,9 +26,7 @@
     "url": "https://github.com/fisker/meter-polyfill.git"
   },
   "ignore": [
-    "node_modules",
-    "bower_components",
-    "test",
-    "tests"
+    "**/*",
+    "!dist"
   ]
 }
