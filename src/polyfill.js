@@ -96,11 +96,11 @@
     return value;
   }
 
-  function each(arrLike, fn) {
+  function each(arrLike, func) {
     var i = 0;
     var len = arrLike[PROP_LENGTH];
     for (; i < len; i++) {
-      if (fn(arrLike[i], i) === TRUE) {
+      if (func(arrLike[i], i) === TRUE) {
         break;
       }
     }
@@ -309,39 +309,39 @@
 
     var oObject = Object;
     var arrayPrototype = Array[PROP_PROTOTYPE];
-    var functionPrototype = Function[PROP_PROTOTYPE];
+    var funcPrototype = Function[PROP_PROTOTYPE];
     // var objectPrototype = oObject[PROP_PROTOTYPE];
 
     var slice = arrayPrototype[METHOD_SLICE];
-    var apply = functionPrototype[METHOD_APPLY];
+    var apply = funcPrototype[METHOD_APPLY];
     var concat = arrayPrototype[METHOD_CONCAT];
 
-    function applyCall(fn, oThis, args) {
-      return apply[METHOD_CALL](fn, oThis, args);
+    function funcApplyCall(func, oThis, args) {
+      return apply[METHOD_CALL](func, oThis, args);
     }
 
-    function sliceCall(arrLike) {
-      var args = applyCall(slice, arguments, [1]);
-      return applyCall(slice, arrLike, args);
+    function arraySliceCall(arrLike) {
+      var args = funcApplyCall(slice, arguments, [1]);
+      return funcApplyCall(slice, arrLike, args);
     }
 
-    function concatCall(arrLike) {
-      var args = sliceCall(arguments, 1);
-      return applyCall(concat, arrLike, args);
+    function arrayConcatCall(arrLike) {
+      var args = arraySliceCall(arguments, 1);
+      return funcApplyCall(concat, arrLike, args);
     }
 
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-    var bind = functionPrototype.bind || function(oThis) {
-      var args = sliceCall(arguments, 1);
-      var fnToBind = this;
+    var bind = funcPrototype.bind || function(oThis) {
+      var args = arraySliceCall(arguments, 1);
+      var funcToBind = this;
       return function() {
-        args = concatCall(args, arguments);
-        return applyCall(fnToBind, oThis, args);
+        args = arrayConcatCall(args, arguments);
+        return funcApplyCall(funcToBind, oThis, args);
       };
     };
 
-    function bindCall(fn) {
-      return applyCall(bind, fn, sliceCall(arguments, 1));
+    function funcBindCall(func) {
+      return funcApplyCall(bind, func, arraySliceCall(arguments, 1));
     }
 
     // only get necessary props
@@ -355,7 +355,7 @@
     propDependencies[PROP_HIGH] = [PROP_MIN, PROP_MAX, PROP_LOW];
 
     each(METER_PROPS, function(prop) {
-      propDependencies[prop] = concatCall(propDependencies[prop], [prop]);
+      propDependencies[prop] = arrayConcatCall(propDependencies[prop], [prop]);
     });
 
 
@@ -395,7 +395,7 @@
           }
         } else {
           if (descriptor[PROP_GET]) {
-            o[property] = bindCall(descriptor[PROP_GET], o);
+            o[property] = funcBindCall(descriptor[PROP_GET], o);
           }
         }
 
@@ -441,30 +441,30 @@
     var createElement = (function(createElement) {
       return function(tagName, options) {
         return createElement[METHOD_APPLY] ?
-          applyCall(createElement, document, arguments) :
+          funcApplyCall(createElement, document, arguments) :
           createElement(tagName, options);
       };
     })(document[METHOD_CREATE_ELEMENT]);
 
 
     var METHOD_TO_STRING = 'toString';
-    var nativeToString = oObject[METHOD_TO_STRING];
-    nativeToString = bindCall(nativeToString, nativeToString);
-    nativeToString[METHOD_TO_STRING] = nativeToString;
+    var funcToString = funcPrototype[METHOD_TO_STRING];
+    funcToString = funcBindCall(funcToString, funcToString);
+    funcToString[METHOD_TO_STRING] = funcToString;
 
     // cache toStingFunctions
     var toStingFns = {};
-    function createNativeFunction(fnName, fn) {
-      fn[METHOD_TO_STRING] = toStingFns[fnName] ||
-        (toStingFns[fnName] = (function() {
+    function createNativeFunction(funcName, func) {
+      func[METHOD_TO_STRING] = toStingFns[funcName] ||
+        (toStingFns[funcName] = (function() {
           function toString() {
-            return 'function ' + fnName + '() { [native code] }';
+            return 'function ' + funcName + '() { [native code] }';
           }
 
-          toString[METHOD_TO_STRING] = nativeToString;
+          toString[METHOD_TO_STRING] = funcToString;
           return toString;
         })());
-      return fn;
+      return func;
     }
 
     var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] ||
@@ -558,10 +558,10 @@
     //     !isNull(el[METHOD_GET_ATTRIBUTE](name));
     // }
 
-    function walkContext(context, tagName, fn) {
+    function walkContext(context, tagName, func) {
       context = context[PROP_LENGTH] ? context : context[METHOD_GET_ELEMENTS_BY_TAG_NAME](tagName);
       each(context, function(context) {
-        fn(context);
+        func(context);
       });
     }
 
@@ -728,8 +728,8 @@
       if (!SUPPORTS_ATTERS_AS_PROPS) {
         each(METER_PROPS, function(prop) {
           properties[prop] = {
-            get: bindCall(getter, meter, prop),
-            set: bindCall(setter, meter, prop)
+            get: funcBindCall(getter, meter, prop),
+            set: funcBindCall(setter, meter, prop)
           };
         });
       }
@@ -742,7 +742,7 @@
       };
 
       if (!SUPPORTS_ATTERS_AS_PROPS) {
-        var setAttribute = bindCall(meter[METHOD_SET_ATTRIBUTE], meter);
+        var setAttribute = funcBindCall(meter[METHOD_SET_ATTRIBUTE], meter);
 
         var methodSetAttribute = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
           setAttribute(attr, value);
@@ -756,7 +756,7 @@
       }
 
       if (SUPPORTS_ATTERS_AS_PROPS) {
-        var removeAttribute = bindCall(meter[METHOD_REMOVE_ATTRIBUTE], meter);
+        var removeAttribute = funcBindCall(meter[METHOD_REMOVE_ATTRIBUTE], meter);
 
         var methodRemoveAttribute = createNativeFunction(METHOD_REMOVE_ATTRIBUTE, function(attr) {
           removeAttribute(attr);
@@ -770,7 +770,7 @@
       }
 
       var METHOD_CLONE_NODE = 'cloneNode';
-      var cloneNode = bindCall(meter[METHOD_CLONE_NODE], meter);
+      var cloneNode = funcBindCall(meter[METHOD_CLONE_NODE], meter);
       var methodCloneNode = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
         var clone = cloneNode(FALSE);
         if (SUPPORTS_ATTERS_AS_PROPS) {
@@ -791,6 +791,12 @@
         value: VERSION
       };
 
+      properties[METHOD_TO_STRING] = {
+        enumerable: FALSE,
+        writeable: FALSE,
+        value: HTMLMeterElement[METHOD_TO_STRING]
+      };
+
       properties[PROP_CONSTRUCTOR] = {
         enumerable: FALSE,
         value: HTMLMeterElement
@@ -801,12 +807,13 @@
           defineProperty(meter, prop, properties[prop]);
         }
       }
+
       meter[PROP_PROTO] = HTMLMeterElement.prototype;
     }
 
     // overwrite document.createElement
     document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, function() {
-      var el = applyCall(createElement, document, arguments);
+      var el = funcApplyCall(createElement, document, arguments);
       if (isElement(el, METER_TAG_NAME)) {
         polyfillMeter(el);
       }
