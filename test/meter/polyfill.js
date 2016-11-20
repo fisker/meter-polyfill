@@ -25,7 +25,7 @@
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
   var METER_TAG_NAME = 'METER';
-  var VERSION = '1.5.0';
+  var VERSION = '1.5.1';
 
   var METHOD_TO_UPPER_CASE = 'toUpperCase';
   var METHOD_TO_LOWER_CASE = 'toLowerCase';

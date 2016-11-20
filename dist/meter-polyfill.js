@@ -1,6 +1,6 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.5.0
+ * @version v1.5.1
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
@@ -32,12 +32,13 @@
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
   var METER_TAG_NAME = 'METER';
-  var VERSION = '1.5.0';
+  var VERSION = '1.5.1';
 
   var METHOD_TO_UPPER_CASE = 'toUpperCase';
   var METHOD_TO_LOWER_CASE = 'toLowerCase';
 
 
+  /* eslint no-empty-function: 0 */
   var NOOP = function() {};
   var TRUE = true;
   var FALSE = false;
@@ -77,12 +78,12 @@
   var meterElement = document[METHOD_CREATE_ELEMENT](METER_TAG_NAME);
   var nativeSupport = meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX];
 
-  function lessThan(value, high) {
-    if (value > high) {
-      value = high;
-    }
-    return value;
-  }
+  // function lessThan(value, high) {
+  //   if (value > high) {
+  //     value = high;
+  //   }
+  //   return value;
+  // }
 
   function greaterThan(value, low) {
     if (value < low) {
@@ -273,14 +274,14 @@
     };
   }
 
-  var meterPolyfill = nativeSupport ? NOOP : (function(){
+  var meterPolyfill = nativeSupport ? NOOP : (function() {
     /* polyfill starts */
 
     var POLYFILL_FLAG = '_polyfill';
 
     var METHOD_REMOVE_CHILD = 'removeChild';
     var METHOD_SET_ATTRIBUTE = 'setAttribute';
-    var METHOD_HAS_ATTRIBUTE = 'hasAttribute';
+    // var METHOD_HAS_ATTRIBUTE = 'hasAttribute';
     var METHOD_GET_ATTRIBUTE = 'getAttribute';
     var METHOD_REMOVE_ATTRIBUTE = 'removeAttribute';
     var METHOD_APPEND_CHILD = 'appendChild';
@@ -319,7 +320,7 @@
     var oObject = Object;
     var arrayPrototype = Array[PROP_PROTOTYPE];
     var functionPrototype = Function[PROP_PROTOTYPE];
-    var objectPrototype = oObject[PROP_PROTOTYPE];
+    // var objectPrototype = oObject[PROP_PROTOTYPE];
 
     var defineProperty;
     var objectDefineProperty = oObject.defineProperty;
@@ -439,9 +440,11 @@
 
     var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] ||
       (window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = (function() {
-        var HTMLMeterElement = createNativeFunction(HTML_METER_ELEMENT_CONSTRICTOR_NAME, function() {
-          throwTypeError('Illegal ' + PROP_CONSTRUCTOR + '' + (isFirefox ? '.' : ''));
-        });
+        var HTMLMeterElement = createNativeFunction(
+          HTML_METER_ELEMENT_CONSTRICTOR_NAME,
+          function() {
+            throwTypeError('Illegal ' + PROP_CONSTRUCTOR + '' + (isFirefox ? '.' : ''));
+          });
 
         var htmlElementPrototype = create((window.HTMLElement ||
           meterElement[PROP_CONSTRUCTOR] ||
@@ -468,8 +471,10 @@
     var SUPPORTS_MUTATION_OBSERVER = !!MutationObserver;
     var SUPPORTS_ADD_EVENT_LISTENER = !!window[METHOD_ADD_EVENT_LISTENER];
     var SUPPORTS_ATTACH_EVENT = !!window[METHOD_ATTACH_EVENT];
-    var SUPPORTS_ATTERS_AS_PROPS = meterElement[METHOD_GET_ATTRIBUTE](METER_TAG_NAME) === METER_TAG_NAME; // (IE8- bug)
-    var SUPPORTS_HAS_ATTRIBUTE = !!meterElement[METHOD_HAS_ATTRIBUTE];
+    // (IE8- bug)
+    var SUPPORTS_ATTERS_AS_PROPS = meterElement[METHOD_GET_ATTRIBUTE](METER_TAG_NAME) ===
+      METER_TAG_NAME;
+    // var SUPPORTS_HAS_ATTRIBUTE = !!meterElement[METHOD_HAS_ATTRIBUTE];
     var SUPPORTS_PROPERTYCHANGE = 'onpropertychange' in document;
     var SUPPORTS_DOM_NODE_INSERTED = FALSE;
     var SUPPORTS_DOM_ATTR_MODIFIED = FALSE;
@@ -527,11 +532,11 @@
     var setTimeout = window.setTimeout;
     var setInterval = window.setInterval;
 
-    function hasAttribute(el, name) {
-      return SUPPORTS_HAS_ATTRIBUTE ?
-        el[METHOD_HAS_ATTRIBUTE](name) :
-        !isNull(el[METHOD_GET_ATTRIBUTE](name));
-    }
+    // function hasAttribute(el, name) {
+    //   return SUPPORTS_HAS_ATTRIBUTE ?
+    //     el[METHOD_HAS_ATTRIBUTE](name) :
+    //     !isNull(el[METHOD_GET_ATTRIBUTE](name));
+    // }
 
     function walkContext(context, tagName, fn) {
       context = context[PROP_LENGTH] ? context : context[METHOD_GET_ELEMENTS_BY_TAG_NAME](tagName);
@@ -570,9 +575,9 @@
             callback(prop);
           }
         });
-      } else {
-        // anything ?
       }
+
+      // anything else?
     }
 
     function polyfillMeter(context) {
@@ -671,8 +676,15 @@
         return function(value) {
           if (!isValidValue(value)) {
             var errorMessage = isFirefox ?
-              'Value being assigned to ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.' + prop + ' is not a finite floating-point value.' :
-              'Failed to set the \'' + prop + '\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.';
+
+              'Value being assigned to ' +
+              HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.' + prop +
+              ' is not a finite floating-point value.' :
+
+              'Failed to set the \'' + prop + '\' property on '+
+              '\'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\'' +
+              ': The provided double value is non-finite.';
+
             throwTypeError(errorMessage);
           }
 
@@ -877,6 +889,7 @@
 
     (function() {
       var isReady = FALSE;
+      var isTop = FALSE;
 
       function setReady() {
         isReady = TRUE;
