@@ -762,6 +762,19 @@
         [0, -1]
       ],
       [
+        'meter.value = 1;meter.value;meter.removeAttribute("value");meter.value;',
+        function () {
+          var values = [];
+          var meter = document.createElement(METER_TAG_NAME);
+          meter.value = 1;
+          values.push(meter.value);
+          meter.removeAttribute('value');
+          values.push(meter.value);
+          return values;
+        },
+        [1, 0]
+      ],
+      [
         'div.innerHTML = "<meter></meter>"',
         function () {
           var div = document.createElement('div');

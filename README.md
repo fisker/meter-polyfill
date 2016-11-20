@@ -24,7 +24,7 @@ for browsers supports `meter`, use `fakemeter` to test
 https://fisker.github.io/meter-polyfill/test/fakemeter/meter.html
 
 ## api
-```
+```javascript
 meterPolyfill(); // document contains meter
 meterPolyfill(document.getElementById('container')); // dom contains meter
 meterPolyfill(document.getElementsByTagName('div')); // domlist contains meter
@@ -52,7 +52,7 @@ calcResult.className // value className
 
 ## usage
 
-```
+```html
 <link rel="stylesheet" href="https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.css">
 <script src="https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.js"></script>
 <script>
@@ -61,7 +61,7 @@ console.log(meterPolyfill);
 ```
 
 amd loader
-```
+```html
 <link rel="stylesheet" href="https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.css">
 <script src="require.min.js"></script>
 <script>
@@ -73,7 +73,7 @@ require(['https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.js'], functio
 
 ## known issue(s): 
 
-1. uglifyjs(v2.7.3) breaks code for ie < 9
+1. minify version does works on ie < 9
 
    use `meter-polyfill.js` instead. until uglifyjs fix this bug
 
