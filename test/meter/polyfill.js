@@ -25,7 +25,7 @@
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
   var METER_TAG_NAME = 'METER';
-  var VERSION = '1.5.1';
+  var VERSION = '1.6.0';
 
   var METHOD_TO_UPPER_CASE = 'toUpperCase';
   var METHOD_TO_LOWER_CASE = 'toLowerCase';
@@ -310,7 +310,7 @@
     var oObject = Object;
     var arrayPrototype = Array[PROP_PROTOTYPE];
     var funcPrototype = Function[PROP_PROTOTYPE];
-    // var objectPrototype = oObject[PROP_PROTOTYPE];
+    // var objPrototype = oObject[PROP_PROTOTYPE];
 
     var slice = arrayPrototype[METHOD_SLICE];
     var apply = funcPrototype[METHOD_APPLY];
@@ -449,6 +449,7 @@
 
     var METHOD_TO_STRING = 'toString';
     var funcToString = funcPrototype[METHOD_TO_STRING];
+    var stringToString = funcToString[METHOD_TO_STRING]();
     funcToString = funcBindCall(funcToString, funcToString);
     funcToString[METHOD_TO_STRING] = funcToString;
 
@@ -458,9 +459,8 @@
       func[METHOD_TO_STRING] = toStingFns[funcName] ||
         (toStingFns[funcName] = (function() {
           function toString() {
-            return 'function ' + funcName + '() { [native code] }';
+            return stringToString.replace(METHOD_TO_STRING, funcName);
           }
-
           toString[METHOD_TO_STRING] = funcToString;
           return toString;
         })());
