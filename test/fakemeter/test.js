@@ -576,35 +576,40 @@
     return '<' + tag + ' ' + attrs.join(' ') + '>' + '</' + tag + '>';
   }
 
+  var TO_STRING = '' + Function.prototype.toString;
+  function getNativeFunctionSource(funcName) {
+    return TO_STRING.replace('toString', funcName);
+  }
+
   function showPropTest() {
     var propTest = [
       [
         'document.createElement',
         function () {
-          return '' + document.createElement;
+          return document.createElement.toString();
         },
-        'function createElement() { [native code] }'
+        getNativeFunctionSource('createElement')
       ],
       [
         'document.createElement.toString',
         function () {
-          return '' + document.createElement.toString;
+          return document.createElement.toString.toString();
         },
-        Function.toString.toString.toString()
+        getNativeFunctionSource('toString')
       ],
       [
         'document.createElement.toString.toString',
         function () {
-          return '' + document.createElement.toString.toString;
+          return document.createElement.toString.toString.toString();
         },
-        Function.toString.toString.toString()
+        getNativeFunctionSource('toString')
       ],
       [
         HTML_METER_ELEMENT_CONSTRICTOR_NAME,
         function () {
-          return '' + window[HTML_METER_ELEMENT_CONSTRICTOR_NAME];
+          return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME].toString();
         },
-        'function ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '() { [native code] }'
+        getNativeFunctionSource(HTML_METER_ELEMENT_CONSTRICTOR_NAME)
       ],
       [
         'new ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '()',

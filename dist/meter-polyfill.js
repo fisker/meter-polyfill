@@ -1,6 +1,6 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.6.0
+ * @version v1.6.1
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
@@ -32,7 +32,7 @@
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
   var METER_TAG_NAME = 'METER';
-  var VERSION = '1.6.0';
+  var VERSION = '1.6.1';
 
   var METHOD_TO_UPPER_CASE = 'toUpperCase';
   var METHOD_TO_LOWER_CASE = 'toLowerCase';
@@ -77,6 +77,8 @@
   var meterElement = document[METHOD_CREATE_ELEMENT](METER_TAG_NAME);
   var nativeSupport = meterElement[PROP_MAX] === METER_INITAL_VALUES[PROP_MAX];
 
+  var toFloat = Number.parseFloat || parseFloat;
+
   // function lessThan(value, high) {
   //   if (value > high) {
   //     value = high;
@@ -107,7 +109,7 @@
     var i = 0;
     var len = arrLike[PROP_LENGTH];
     for (; i < len; i++) {
-      if (func(arrLike[i], i) === TRUE) {
+      if (func(arrLike[i], i) === FALSE) {
         break;
       }
     }
@@ -122,7 +124,7 @@
   }
 
   function isValidValue(obj) {
-    return isNull(obj) || (!isNaN(obj) && isFinite(obj));
+    return isNull(obj) || isFinite(toFloat(obj));
   }
 
   function parseValue(value, valueForNull) {
@@ -131,7 +133,7 @@
     }
     return !isValidValue(value) || isNull(value) ?
       valueForNull :
-      parseFloat(value);
+      toFloat(value);
   }
 
   function assignValues(target, source) {
@@ -282,7 +284,6 @@
 
     var METHOD_REMOVE_CHILD = 'removeChild';
     var METHOD_SET_ATTRIBUTE = 'setAttribute';
-    // var METHOD_HAS_ATTRIBUTE = 'hasAttribute';
     var METHOD_GET_ATTRIBUTE = 'getAttribute';
     var METHOD_REMOVE_ATTRIBUTE = 'removeAttribute';
     var METHOD_APPEND_CHILD = 'appendChild';
@@ -311,6 +312,8 @@
     var PROP_FOR = 'htmlFor';
 
     var documentElement = document.documentElement;
+    var HTMLElement = window.HTMLElement;
+
     var allLabels = documentElement[METHOD_GET_ELEMENTS_BY_TAG_NAME](LABEL_TAG_NAME);
     var allMeters = documentElement[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG_NAME);
 
@@ -318,6 +321,11 @@
     var arrayPrototype = Array[PROP_PROTOTYPE];
     var funcPrototype = Function[PROP_PROTOTYPE];
     // var objPrototype = oObject[PROP_PROTOTYPE];
+
+    var METHOD_TO_STRING = 'toString';
+    var funcToString = funcPrototype[METHOD_TO_STRING];
+    // var objToString = objPrototype[METHOD_TO_STRING];
+    var TO_STRING = '' + funcToString;
 
     var slice = arrayPrototype[METHOD_SLICE];
     var apply = funcPrototype[METHOD_APPLY];
@@ -365,21 +373,16 @@
       propDependencies[prop] = arrayConcatCall(propDependencies[prop], [prop]);
     });
 
-
     var defineProperty;
     var objectDefineProperty = oObject.defineProperty;
     if (objectDefineProperty) {
       defineProperty = function(o, property, descriptor) {
-        var PROP_ENUMERABLE = 'enumerable';
-        var PROP_CONFIGURABLE = 'configurable';
-        if (descriptor[PROP_ENUMERABLE] !== FALSE) {
-          descriptor[PROP_ENUMERABLE] = TRUE;
-        }
-        descriptor[PROP_CONFIGURABLE] = TRUE;
+        descriptor.configurable = TRUE;
 
         try {
           objectDefineProperty(o, property, descriptor);
         } catch (e) {
+          var PROP_ENUMERABLE = 'enumerable';
           if (descriptor[PROP_ENUMERABLE] && e.number === -0x7FF5EC54) {
             descriptor[PROP_ENUMERABLE] = FALSE;
             objectDefineProperty(o, property, descriptor);
@@ -419,10 +422,11 @@
     };
 
     function includes(arrLike, v) {
-      var found = false;
+      var found = FALSE;
       each(arrLike, function(item) {
         if (item === v) {
-          return found = true;
+          found = TRUE;
+          return FALSE;
         }
       });
       return found;
@@ -442,62 +446,73 @@
       METER_TAG_NAME[METHOD_SLICE](1)[METHOD_TO_LOWER_CASE]() +
       'Element';
 
-
     // ie 8 document.createElement is not a function
     // ie 7 document.createElement.apply is undefined
     var createElement = (function(createElement) {
-      return function(tagName, options) {
-        return createElement[METHOD_APPLY] ?
-          funcApplyCall(createElement, document, arguments) :
-          createElement(tagName, options);
+      return function() {
+        return funcApplyCall(createElement, document, arguments);
       };
     })(document[METHOD_CREATE_ELEMENT]);
 
 
-    var METHOD_TO_STRING = 'toString';
-    var funcToString = funcPrototype[METHOD_TO_STRING];
-    var stringToString = funcToString[METHOD_TO_STRING]();
-    funcToString = funcBindCall(funcToString, funcToString);
-    funcToString[METHOD_TO_STRING] = funcToString;
+    var nativeToString = funcBindCall(funcToString, funcToString);
+    nativeToString[METHOD_TO_STRING] = nativeToString;
 
     // cache toStingFunctions
     var toStingFns = {};
-    function createNativeFunction(funcName, func) {
+    function pretendNativeFunction(funcName, func) {
       func[METHOD_TO_STRING] = toStingFns[funcName] ||
         (toStingFns[funcName] = (function() {
           function toString() {
-            return stringToString.replace(METHOD_TO_STRING, funcName);
+            return TO_STRING.replace(METHOD_TO_STRING, funcName);
           }
-          toString[METHOD_TO_STRING] = funcToString;
+          toString[METHOD_TO_STRING] = nativeToString;
           return toString;
         })());
       return func;
     }
 
-    var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] ||
-      (window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = (function() {
-        var HTMLMeterElement = createNativeFunction(
-          HTML_METER_ELEMENT_CONSTRICTOR_NAME,
-          function() {
-            throwTypeError('Illegal ' + PROP_CONSTRUCTOR + '' + (isFirefox ? '.' : ''));
-          });
+    function getValueDescriptor(value) {
+      return {value: value};
+    }
 
-        var htmlElementPrototype = create((window.HTMLElement ||
-          meterElement[PROP_CONSTRUCTOR] ||
-          window.Element ||
-          window.Node ||
-          NOOP)[PROP_PROTOTYPE]);
+    var HTMLMeterElement = window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] || (function() {
+      var MSG_ILLEAGE_CONSTRUCTOR = '';
+      try {
+        // TODO: HTMLElement is not a function in ie, even ie >= 9
+        new HTMLElement();
+      } catch (e) {
+        MSG_ILLEAGE_CONSTRUCTOR = e.message;
+      }
 
-        defineProperty(htmlElementPrototype, PROP_CONSTRUCTOR, {
-          enumerable: FALSE,
-          value: HTMLMeterElement
-        });
+      function HTMLMeterElement() {
+        throwTypeError(MSG_ILLEAGE_CONSTRUCTOR);
+      }
 
-        HTMLMeterElement[PROP_PROTOTYPE] = htmlElementPrototype;
-        HTMLMeterElement[PROP_PROTO] = htmlElementPrototype;
+      var htmlElementPrototype = (
+        HTMLElement ||
+        meterElement[PROP_CONSTRUCTOR] ||
+        window.Element ||
+        window.Node ||
+        NOOP
+        )[PROP_PROTOTYPE];
 
-        return HTMLMeterElement;
-      })());
+      htmlElementPrototype = create(htmlElementPrototype);
+
+      defineProperty(
+        htmlElementPrototype,
+        PROP_CONSTRUCTOR,
+        getValueDescriptor(HTMLMeterElement)
+        );
+
+      HTMLMeterElement[PROP_PROTOTYPE] = htmlElementPrototype;
+      HTMLMeterElement[PROP_PROTO] = htmlElementPrototype;
+
+      return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME] = pretendNativeFunction(
+        HTML_METER_ELEMENT_CONSTRICTOR_NAME,
+        HTMLMeterElement
+      );
+    })();
 
     // there is no moz/ms/o vendor prefix
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -507,14 +522,12 @@
     var SUPPORTS_MUTATION_OBSERVER = !!MutationObserver;
     var SUPPORTS_ADD_EVENT_LISTENER = !!window[METHOD_ADD_EVENT_LISTENER];
     var SUPPORTS_ATTACH_EVENT = !!window[METHOD_ATTACH_EVENT];
-    // (IE8- bug)
+    // ie <= 8 attributes are same as properties
     var SUPPORTS_ATTERS_AS_PROPS = meterElement[METHOD_GET_ATTRIBUTE](POLYFILL_FLAG) ===
       VERSION;
-    // var SUPPORTS_HAS_ATTRIBUTE = !!meterElement[METHOD_HAS_ATTRIBUTE];
     var SUPPORTS_PROPERTYCHANGE = 'onpropertychange' in document;
     var SUPPORTS_DOM_NODE_INSERTED = FALSE;
     var SUPPORTS_DOM_ATTR_MODIFIED = FALSE;
-
 
     var METHOD_DOM_NODE_INSERTED = 'DOMNodeInserted';
     var METHOD_DOM_ATTR_MODIFIED = 'DOMAttrModified';
@@ -535,16 +548,22 @@
       testDiv = testChild = NULL;
     }
 
-    function on(el, events, listener, useCapture) {
-      each(events.split(' '), function(event) {
+    function on(target, eventTypes, listener, useCapture) {
+      each(eventTypes.split(' '), function(type) {
         if (SUPPORTS_ADD_EVENT_LISTENER) {
-          el[METHOD_ADD_EVENT_LISTENER](event, listener, !!useCapture);
+          target[METHOD_ADD_EVENT_LISTENER](type, listener, !!useCapture);
         } else if (SUPPORTS_ATTACH_EVENT) {
-          el[METHOD_ATTACH_EVENT]('on' + event, listener);
+          target[METHOD_ATTACH_EVENT]('on' + type, listener);
         } else {
-          el['on' + event] = listener;
+          target['on' + type] = listener;
         }
       });
+    }
+
+    function observe(target, callback, options) {
+      var observer = new MutationObserver(callback);
+      observer.observe(target, options);
+      return observer;
     }
 
     var METER_SHADOW_HTML = [
@@ -559,12 +578,6 @@
     var setTimeout = window.setTimeout;
     var setInterval = window.setInterval;
 
-    // function hasAttribute(el, name) {
-    //   return SUPPORTS_HAS_ATTRIBUTE ?
-    //     el[METHOD_HAS_ATTRIBUTE](name) :
-    //     !isNull(el[METHOD_GET_ATTRIBUTE](name));
-    // }
-
     function walkContext(context, tagName, func) {
       context = context[PROP_LENGTH] ? context : context[METHOD_GET_ELEMENTS_BY_TAG_NAME](tagName);
       each(context, function(context) {
@@ -572,30 +585,29 @@
       });
     }
 
-    function observerAttributes(el, attrs, callback) {
+    function observerAttributes(target, attrs, callback) {
       if (SUPPORTS_MUTATION_OBSERVER) {
-        new MutationObserver(function(mutations) {
+        observe(target, function(mutations) {
           each(mutations, function(mutation) {
             var atrr = mutation.attributeName[METHOD_TO_LOWER_CASE]();
-            callback(atrr);
+            callback(target, atrr);
           });
-        })
-        .observe(el, {
+        }, {
           attributes: TRUE,
           attributeFilter: attrs
         });
       } else if (SUPPORTS_DOM_ATTR_MODIFIED) {
-        on(el, METHOD_DOM_ATTR_MODIFIED, function(e) {
+        on(target, METHOD_DOM_ATTR_MODIFIED, function(e) {
           var attr = e.attrName[METHOD_TO_LOWER_CASE]();
           if (includes(attrs, attr)) {
-            callback(attr);
+            callback(target, attr);
           }
         });
       } else if (SUPPORTS_PROPERTYCHANGE) {
-        on(el, 'propertychange', function(e) {
+        on(target, 'propertychange', function(e) {
           var prop = e.propertyName[METHOD_TO_LOWER_CASE]();
           if (includes(attrs, prop)) {
-            callback(prop);
+            callback(target, prop);
           }
         });
       }
@@ -615,12 +627,9 @@
         meter = createShadowDom(meter);
         defineMeterProperties(meter);
 
-        observerAttributes(meter, METER_PROPS, function(attr) {
-          triggerAttrChange(meter, attr);
-        });
+        observerAttributes(meter, METER_PROPS, triggerAttrChange);
         updateMeterStyle(meter);
       }
-
     }
 
     function updateMeterStyle(meter) {
@@ -631,13 +640,16 @@
       var PROP_WIDTH = 'width';
 
       var valueElement = meter[PROP_FIRST_CHILD][PROP_FIRST_CHILD][PROP_FIRST_CHILD];
+
+      // only update when necessary
       var currentClassName = valueElement[PROP_CLASS_NAME];
-      var currentWidth = valueElement[PROP_STYLE][PROP_WIDTH];
       var changeClassName = result[PROP_CLASS_NAME];
-      var changeWidth = result.percentage + '%';
       if (currentClassName !== changeClassName) {
         valueElement[PROP_CLASS_NAME] = changeClassName;
       }
+
+      var currentWidth = valueElement[PROP_STYLE][PROP_WIDTH];
+      var changeWidth = result.percentage + '%';
       if (currentWidth !== changeWidth) {
         valueElement[PROP_STYLE][PROP_WIDTH] = changeWidth;
       }
@@ -652,10 +664,11 @@
 
     function createShadowDom(meter) {
       if (meter.canHaveChildren === FALSE || meter.canHaveHTML === FALSE) {
-        // ie 8 fails on innerHTML created meter
+        // ie <= 8 fails on innerHTML created meter
         var parent = meter.parentNode;
         if (parent) {
-          var meterClone = assignValues(createElement(METER_TAG_NAME), meter);
+          var meterClone = createElement(METER_TAG_NAME);
+          assignValues(meterClone, meter);
           parent.replaceChild(meterClone, meter);
           meter = meterClone;
 
@@ -680,42 +693,45 @@
     }
 
     // use common getter & setter
-    function getter(prop) {
+    function propGetter(prop) {
       var meter = this;
       var propValues = {};
 
       each(propDependencies[prop], function(prop) {
         propValues[prop] = parseValue(meter[METHOD_GET_ATTRIBUTE](prop));
       });
+
       return getPropValue(propValues, prop);
     }
 
-    function setter(prop, value) {
+    // TODO: find right msg by test on a non-finite prop of known element
+    var MSG_NON_FINITE = 'Failed to set the \'' + PROP_MAX + '\' property on ' +
+      '\'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\'' +
+      ': The provided double value is non-finite.';
+
+    // firefox msg
+    // 'Value being assigned to ' +
+    // HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.' + prop +
+    // ' is not a finite floating-point value.';
+
+    function propSetter(prop, value) {
+      var meter = this;
       if (!isValidValue(value)) {
-        var errorMessage = isFirefox ?
-
-          'Value being assigned to ' +
-          HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.' + prop +
-          ' is not a finite floating-point value.' :
-
-          'Failed to set the \'' + prop + '\' property on ' +
-          '\'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\'' +
-          ': The provided double value is non-finite.';
-
-        throwTypeError(errorMessage);
+        throwTypeError(MSG_NON_FINITE.replace(PROP_MAX, prop));
       }
 
-      this[METHOD_SET_ATTRIBUTE](prop, '' + parseValue(value, 0));
+      meter[METHOD_SET_ATTRIBUTE](prop, '' + parseValue(value, 0));
       return value;
     }
 
-    function getMeterLables(meter) {
+    function lablesGetter() {
+      var meter = this;
       var assignedLables = [];
       var i = 0;
+      var propId = meter[PROP_ID];
 
       each(allLabels, function(label) {
         var propFor = label[PROP_FOR];
-        var propId = meter[PROP_ID];
 
         if (
           (label.control === meter) ||
@@ -729,56 +745,51 @@
       return assignedLables;
     }
 
+    function getPropDescriptor(getter, setter) {
+      return {enumerable: TRUE, get: getter, set: setter};
+    }
+
     function defineMeterProperties(meter) {
+      meter[PROP_PROTO] = HTMLMeterElement.prototype;
+
       var properties = {};
 
       if (!SUPPORTS_ATTERS_AS_PROPS) {
         each(METER_PROPS, function(prop) {
-          properties[prop] = {
-            get: funcBindCall(getter, meter, prop),
-            set: funcBindCall(setter, meter, prop)
-          };
+          properties[prop] = getPropDescriptor(
+            funcBindCall(propGetter, meter, prop),
+            funcBindCall(propSetter, meter, prop)
+            );
         });
       }
 
-      properties[PROP_LABELS] = {
-        writeable: FALSE,
-        get: function() {
-          return getMeterLables(meter);
-        }
-      };
+      properties[PROP_LABELS] = getPropDescriptor(funcBindCall(lablesGetter, meter));
 
       if (!SUPPORTS_ATTERS_AS_PROPS) {
         var setAttribute = funcBindCall(meter[METHOD_SET_ATTRIBUTE], meter);
 
-        var methodSetAttribute = createNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
+        var methodSetAttribute = pretendNativeFunction(METHOD_SET_ATTRIBUTE, function(attr, value) {
           setAttribute(attr, value);
           triggerAttrChange(meter, attr);
         });
 
-        properties[METHOD_SET_ATTRIBUTE] = {
-          enumerable: FALSE,
-          value: methodSetAttribute
-        };
+        properties[METHOD_SET_ATTRIBUTE] = getValueDescriptor(methodSetAttribute);
       }
 
       if (SUPPORTS_ATTERS_AS_PROPS) {
         var removeAttribute = funcBindCall(meter[METHOD_REMOVE_ATTRIBUTE], meter);
 
-        var methodRemoveAttribute = createNativeFunction(METHOD_REMOVE_ATTRIBUTE, function(attr) {
+        var methodRemoveAttribute = pretendNativeFunction(METHOD_REMOVE_ATTRIBUTE, function(attr) {
           removeAttribute(attr);
           triggerAttrChange(meter, attr);
         });
 
-        properties[METHOD_REMOVE_ATTRIBUTE] = {
-          enumerable: FALSE,
-          value: methodRemoveAttribute
-        };
+        properties[METHOD_REMOVE_ATTRIBUTE] = getValueDescriptor(methodRemoveAttribute);
       }
 
       var METHOD_CLONE_NODE = 'cloneNode';
       var cloneNode = funcBindCall(meter[METHOD_CLONE_NODE], meter);
-      var methodCloneNode = createNativeFunction(METHOD_CLONE_NODE, function(deep) {
+      var methodCloneNode = pretendNativeFunction(METHOD_CLONE_NODE, function(deep) {
         var clone = cloneNode(FALSE);
         if (SUPPORTS_ATTERS_AS_PROPS) {
           clone[METHOD_REMOVE_ATTRIBUTE](POLYFILL_FLAG);
@@ -787,39 +798,22 @@
         return clone;
       });
 
-      properties[METHOD_CLONE_NODE] = {
-        enumerable: FALSE,
-        value: methodCloneNode
-      };
-
-      properties[POLYFILL_FLAG] = {
-        enumerable: FALSE,
-        writeable: FALSE,
-        value: VERSION
-      };
-
-      properties[METHOD_TO_STRING] = {
-        enumerable: FALSE,
-        writeable: FALSE,
-        value: HTMLMeterElement[METHOD_TO_STRING]
-      };
-
-      properties[PROP_CONSTRUCTOR] = {
-        enumerable: FALSE,
-        value: HTMLMeterElement
-      };
+      properties[METHOD_CLONE_NODE] = getValueDescriptor(methodCloneNode);
+      properties[POLYFILL_FLAG] = getValueDescriptor(VERSION);
+      if (meter[PROP_CONSTRUCTOR] !== HTMLMeterElement) {
+        // ie <= 10 need define construtor
+        properties[PROP_CONSTRUCTOR] = getValueDescriptor(HTMLMeterElement);
+      }
 
       for (var prop in properties) {
         if (properties.hasOwnProperty(prop)) {
           defineProperty(meter, prop, properties[prop]);
         }
       }
-
-      meter[PROP_PROTO] = HTMLMeterElement.prototype;
     }
 
     // overwrite document.createElement
-    document[METHOD_CREATE_ELEMENT] = createNativeFunction(METHOD_CREATE_ELEMENT, function() {
+    document[METHOD_CREATE_ELEMENT] = pretendNativeFunction(METHOD_CREATE_ELEMENT, function() {
       var el = funcApplyCall(createElement, document, arguments);
       if (isElement(el, METER_TAG_NAME)) {
         polyfillMeter(el);
@@ -831,12 +825,11 @@
       var PROP_TARGET = 'target';
       if (SUPPORTS_MUTATION_OBSERVER) {
         // observe subtree
-        new MutationObserver(function(mutations) {
+        observe(documentElement, function(mutations) {
           each(mutations, function(mutation) {
             polyfillMeter(mutation[PROP_TARGET]);
           });
-        })
-        .observe(documentElement, {
+        }, {
           subtree: TRUE,
           childList: TRUE
         });

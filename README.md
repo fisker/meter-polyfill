@@ -79,8 +79,19 @@ require(['https://unpkg.com/meter-polyfill/dist/meter-polyfill.min.js'], functio
 
 2. currently firefox shows diffently from chrome
 
-3. ie<9 might not work completely
+3. old IEs
+  1. ie <= 8 
+    problem: accessing properties get attribute value
+    solution: use meterPolyfill.calc(meter)[prop] instead
+  2. ie <= 7
+    problem: meter.labels is not live
+    solution: currently no solution supplied
 
-4. innerHTML createMeter is not polyfilled imidiately. 
+4. innerHTML created Meter is not polyfilled imidiately. 
    1. call `meterPolyfill(parentNode)` manually.
    2. render to the dom tree, it will be polyfilled.
+
+5. list functions returns diffently from native, and there is no plan to change.
+  1. Function.prototype.toString.call(HTMLMeterElement)
+  2. meter.toString()
+  3. Object.prototype.toString.call(meter)
