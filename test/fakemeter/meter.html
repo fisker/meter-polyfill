@@ -11,9 +11,15 @@
   <link rel="stylesheet" href="polyfill.css">
   <link rel="stylesheet" href="test.css">
   <script>var METER_TAG_NAME = 'FAKEMETER';</script>
-  <!--[if lt IE 9]><script>document.createElement(METER_TAG_NAME)</script><![endif]-->
+  <!--[if lt IE 9]>
+  <script src="html5shiv-3.7.3.min.js"></script>
+  <script>html5.addElements(METER_TAG_NAME);</script>
+  <![endif]-->
 </head>
 <body>
+  <label><meter id="x"></meter></label>
+  <label for="xx"></label>
+
   <table class="test-result-list">
     <caption>prototype test</caption>
     <thead>

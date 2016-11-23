@@ -5,7 +5,6 @@
       METER_TAG_NAME.charAt(0).toUpperCase() +
       METER_TAG_NAME.slice(1).toLowerCase() +
       'Element';
-  var supportMeter = meterPolyfill.support;
   var test = {};
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 

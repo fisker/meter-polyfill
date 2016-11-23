@@ -13,6 +13,7 @@ var minifier = require('gulp-uglify/minifier');
 var flatten = require('gulp-flatten');
 var replace = require('gulp-replace');
 var browserSync = require('browser-sync').create();
+var concat = require('gulp-concat');
 
 
 var pkg = require('./package.json');
@@ -53,10 +54,20 @@ var uglifyjsOpts = {
   }
 };
 
-gulp.task('scripts:min', function() {
-  return gulp.src('src/polyfill.js')
-    .pipe(replace('<%= METER_TAG_NAME %>', 'METER'))
+function getPolyfillJS(tagName) {
+  return gulp.src([
+    'src/intro.js',
+    'src/polyfill.js',
+    'src/outro.js',
+    ])
+    .pipe(concat(pkg.name + '.js'))
+    .pipe(replace('<%= METER_TAG_NAME %>', tagName))
     .pipe(replace('<%= VERSION %>', pkg.version))
+    ;
+}
+
+gulp.task('scripts:min', function() {
+  return getPolyfillJS('METER')
     .pipe(rename(pkg.name + '.min.js'))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(
@@ -72,10 +83,8 @@ gulp.task('scripts:min', function() {
 });
 
 gulp.task('scripts:release', function() {
-  return gulp.src('src/polyfill.js')
+  return getPolyfillJS('METER')
     .pipe(rename(pkg.name + '.js'))
-    .pipe(replace('<%= METER_TAG_NAME %>', 'METER'))
-    .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(header(banner, {pkg}))
     .pipe(gulp.dest('dist'))
     .pipe(size({title: 'scripts'}));
@@ -156,9 +165,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
   });
 
   gulp.task('test:script-polyfill-' + polyfillMeterTag.toLowerCase(), function() {
-    return gulp.src('src/polyfill.js')
-      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag))
-      .pipe(replace('<%= VERSION %>', pkg.version))
+    return getPolyfillJS(polyfillMeterTag)
       .pipe(rename('polyfill.js'))
       .pipe(flatten())
       .pipe(gulp.dest(dist))
@@ -167,9 +174,7 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
   });
 
   gulp.task('test:script-polyfill-min-' + polyfillMeterTag.toLowerCase(), function() {
-    return gulp.src('src/polyfill.js')
-      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag))
-      .pipe(replace('<%= VERSION %>', pkg.version))
+    return getPolyfillJS(polyfillMeterTag)
       .pipe(rename('polyfill.min.js'))
       .pipe(sourcemaps.init({loadMaps: true}))
       .pipe(
