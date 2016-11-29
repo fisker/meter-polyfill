@@ -29,7 +29,8 @@ var banner = ['/**',
 var year = new Date().getFullYear();
 var banner_min = '/* <%= pkg.name %> v<%= pkg.version %> | (c) ' + year + ' <%= pkg.author.name %> | <%= pkg.license %> License */\n';
 
-var polyfillMeterTag = 'FAKEMETER';
+var meter = {tagName: 'METER', interface: 'HTMLMeterElement'};
+var polyfillMeter = {tagName: 'FMETER', interface: 'HTMLFakeMeterElement'};
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 6',
@@ -54,20 +55,21 @@ var uglifyjsOpts = {
   }
 };
 
-function getPolyfillJS(tagName) {
+function getPolyfillJS(meter) {
   return gulp.src([
     'src/intro.js',
     'src/polyfill.js',
     'src/outro.js',
     ])
     .pipe(concat(pkg.name + '.js'))
-    .pipe(replace('<%= METER_TAG_NAME %>', tagName))
+    .pipe(replace('<%= METER_TAG_NAME %>', meter.tagName))
+    .pipe(replace('<%= METER_INTERFACE %>', meter.interface))
     .pipe(replace('<%= VERSION %>', pkg.version))
     ;
 }
 
 gulp.task('scripts:min', function() {
-  return getPolyfillJS('METER')
+  return getPolyfillJS(meter)
     .pipe(rename(pkg.name + '.min.js'))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(
@@ -83,7 +85,7 @@ gulp.task('scripts:min', function() {
 });
 
 gulp.task('scripts:release', function() {
-  return getPolyfillJS('METER')
+  return getPolyfillJS(meter)
     .pipe(rename(pkg.name + '.js'))
     .pipe(header(banner, {pkg}))
     .pipe(gulp.dest('dist'))
@@ -92,7 +94,7 @@ gulp.task('scripts:release', function() {
 
 gulp.task('styles:min', function() {
   return gulp.src('src/polyfill.scss')
-    .pipe(replace('<%= METER_TAG_NAME %>', 'meter'))
+    .pipe(replace('<%= METER_TAG_NAME %>', meter.tagName.toLowerCase()))
     .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(rename(pkg.name + '.min.scss'))
     .pipe(sourcemaps.init({loadMaps: true}))
@@ -114,7 +116,7 @@ gulp.task('styles:min', function() {
 gulp.task('styles:release', function() {
   return gulp.src('src/polyfill.scss')
     .pipe(rename(pkg.name + '.scss'))
-    .pipe(replace('<%= METER_TAG_NAME %>', 'meter'))
+    .pipe(replace('<%= METER_TAG_NAME %>', meter.tagName.toLowerCase()))
     .pipe(replace('<%= VERSION %>', pkg.version))
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(sass({
@@ -134,12 +136,13 @@ gulp.task('styles:release', function() {
 gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles:min'], function() {
 });
 
-[polyfillMeterTag, 'METER'].forEach(function(polyfillMeterTag) {
-  var dist = 'test/' + polyfillMeterTag.toLowerCase();
-  gulp.task('test:scss-' + polyfillMeterTag.toLowerCase(), function() {
+[polyfillMeter, meter].forEach(function(meter) {
+  var tagNameLower = meter.tagName.toLowerCase();
+  var dist = 'test/' + tagNameLower;
+  gulp.task('test:scss-' + tagNameLower, function() {
     return gulp.src('src/**/*.scss')
       .pipe(flatten())
-      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag.toLowerCase()))
+      .pipe(replace('<%= METER_TAG_NAME %>', tagNameLower))
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(sourcemaps.init({loadMaps: true}))
       .pipe(sass({
@@ -154,9 +157,10 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
       .pipe(browserSync.stream());
   });
 
-  gulp.task('test:script-' + polyfillMeterTag.toLowerCase(), function() {
-    return gulp.src('src/**/*.js')
-      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag))
+  gulp.task('test:script-' + tagNameLower, function() {
+    return gulp.src('src/test/*.js')
+      .pipe(replace('<%= METER_TAG_NAME %>', meter.tagName))
+      .pipe(replace('<%= METER_INTERFACE %>', meter.interface))
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(flatten())
       .pipe(gulp.dest(dist))
@@ -164,8 +168,8 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
       .pipe(browserSync.stream());
   });
 
-  gulp.task('test:script-polyfill-' + polyfillMeterTag.toLowerCase(), function() {
-    return getPolyfillJS(polyfillMeterTag)
+  gulp.task('test:script-polyfill-' + tagNameLower, function() {
+    return getPolyfillJS(meter)
       .pipe(rename('polyfill.js'))
       .pipe(flatten())
       .pipe(gulp.dest(dist))
@@ -173,8 +177,8 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
       .pipe(browserSync.stream());
   });
 
-  gulp.task('test:script-polyfill-min-' + polyfillMeterTag.toLowerCase(), function() {
-    return getPolyfillJS(polyfillMeterTag)
+  gulp.task('test:script-polyfill-min-' + tagNameLower, function() {
+    return getPolyfillJS(meter)
       .pipe(rename('polyfill.min.js'))
       .pipe(sourcemaps.init({loadMaps: true}))
       .pipe(
@@ -188,9 +192,10 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
       .pipe(browserSync.stream());
   });
 
-  gulp.task('test:html-' + polyfillMeterTag.toLowerCase(), function() {
-    return gulp.src('src/**/*.html')
-      .pipe(replace('<%= METER_TAG_NAME %>', polyfillMeterTag))
+  gulp.task('test:html-' + tagNameLower, function() {
+    return gulp.src('src/test/*.html')
+      .pipe(replace('<%= METER_TAG_NAME %>', meter.tagName))
+      .pipe(replace('<%= METER_INTERFACE %>', meter.interface))
       .pipe(replace('<%= VERSION %>', pkg.version))
       .pipe(flatten())
       .pipe(gulp.dest(dist))
@@ -216,37 +221,41 @@ gulp.task('test:server', function() {
 });
 
 var tasks = [];
-[polyfillMeterTag, 'METER'].forEach(function(polyfillMeterTag) {
+[polyfillMeter, meter].forEach(function(meter) {
+  var tagNameLower = meter.tagName.toLowerCase();
   tasks = tasks.concat([
-    'test:scss-' + polyfillMeterTag.toLowerCase(),
-    'test:script-' + polyfillMeterTag.toLowerCase(),
-    'test:script-polyfill-' + polyfillMeterTag.toLowerCase(),
-    'test:script-polyfill-min-' + polyfillMeterTag.toLowerCase(),
-    'test:html-' + polyfillMeterTag.toLowerCase(),
+    'test:scss-' + tagNameLower,
+    'test:script-' + tagNameLower,
+    'test:script-polyfill-' + tagNameLower,
+    'test:script-polyfill-min-' + tagNameLower,
+    'test:html-' + tagNameLower,
   ]);
 });
 
 gulp.task('test', tasks);
 
 gulp.task('default', tasks.concat(['test:server']), function() {
+  var tagNameLower = meter.tagName.toLowerCase();
+  var polyfilltagNameLower = polyfillMeter.tagName.toLowerCase();
   gulp.watch('src/**/*.scss', [
-    'test:scss-meter',
-    'test:scss-' + polyfillMeterTag.toLowerCase()
-  ]);
-  gulp.watch('src/**/*.js', [
-    'test:script-meter',
-    'test:script-' + polyfillMeterTag.toLowerCase(),
+    'test:scss-' + tagNameLower,
+    'test:scss-' + polyfilltagNameLower
   ]);
 
-  gulp.watch('src/polyfill.js', [
-    'test:script-polyfill-meter',
-    'test:script-polyfill-' + polyfillMeterTag.toLowerCase(),
-    'test:script-polyfill-min-meter',
-    'test:script-polyfill-min-' + polyfillMeterTag.toLowerCase(),
+  gulp.watch('src/**/*.js', [
+    'test:script-' + tagNameLower,
+    'test:script-' + polyfilltagNameLower,
   ]);
 
   gulp.watch('src/**/*.html', [
-    'test:html-meter',
-    'test:html-' + polyfillMeterTag.toLowerCase(),
+    'test:html-' + tagNameLower,
+    'test:html-' + polyfilltagNameLower,
+  ]);
+
+  gulp.watch('src/polyfill.js', [
+    'test:script-polyfill-' + tagNameLower,
+    'test:script-polyfill-' + polyfilltagNameLower,
+    'test:script-polyfill-min-' + tagNameLower,
+    'test:script-polyfill-min-' + polyfilltagNameLower,
   ]);
 });

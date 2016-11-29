@@ -1,10 +1,6 @@
 (function() {
   'use strict';
 
-  var HTML_METER_ELEMENT_CONSTRICTOR_NAME = 'HTML' +
-      METER_TAG_NAME.charAt(0).toUpperCase() +
-      METER_TAG_NAME.slice(1).toLowerCase() +
-      'Element';
   var test = {};
   var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
 
@@ -604,17 +600,17 @@
         getNativeFunctionSource('toString')
       ],
       [
-        HTML_METER_ELEMENT_CONSTRICTOR_NAME,
+        METER_INTERFACE,
         function () {
-          return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME].toString();
+          return window[METER_INTERFACE].toString();
         },
-        getNativeFunctionSource(HTML_METER_ELEMENT_CONSTRICTOR_NAME)
+        getNativeFunctionSource(METER_INTERFACE)
       ],
       [
-        'new ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '()',
+        'new ' + METER_INTERFACE + '()',
         function () {
           try {
-            return new window[HTML_METER_ELEMENT_CONSTRICTOR_NAME]();
+            return new window[METER_INTERFACE]();
           } catch (e) {
             return e.message;
           }
@@ -622,18 +618,18 @@
         isFirefox ? 'Illegal constructor.' : 'Illegal constructor'
       ],
       [
-        HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.prototype.constructor',
+        METER_INTERFACE + '.prototype.constructor',
         function () {
-          return window[HTML_METER_ELEMENT_CONSTRICTOR_NAME].prototype.constructor;
+          return window[METER_INTERFACE].prototype.constructor;
         },
-        window[HTML_METER_ELEMENT_CONSTRICTOR_NAME]
+        window[METER_INTERFACE]
       ],
       [
         'document.createElement(\'' + METER_TAG_NAME + '\').constructor',
         function () {
           return document.createElement(METER_TAG_NAME).constructor;
         },
-        window[HTML_METER_ELEMENT_CONSTRICTOR_NAME]
+        window[METER_INTERFACE]
       ],
       [
         'meter.max = "010"',
@@ -691,8 +687,8 @@
           }
         },
         isFirefox ?
-          'Value being assigned to ' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '.max is not a finite floating-point value.':
-          'Failed to set the \'max\' property on \'' + HTML_METER_ELEMENT_CONSTRICTOR_NAME + '\': The provided double value is non-finite.'
+          'Value being assigned to ' + METER_INTERFACE + '.max is not a finite floating-point value.':
+          'Failed to set the \'max\' property on \'' + METER_INTERFACE + '\': The provided double value is non-finite.'
       ],
       [
         'meter.setAttribute("max", "010")',

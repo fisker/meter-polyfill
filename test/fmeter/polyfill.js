@@ -1,3 +1,17 @@
+/* globals define: true, module: true*/
+(function(root, factory) {
+  'use strict';
+
+  if (typeof define === 'function' && define.amd) {
+    define(function() {return factory(root);});
+  } else if (typeof module === 'object' && module.exports) {
+    module.exports = factory(root);
+  } else {
+    root.meterPolyfill = factory(root);
+  }
+})(this, function(window) {
+  'use strict';
+
   var document = window.document;
 
   function throwError(message, constructor) {
@@ -13,9 +27,9 @@
   var METHOD_TO_UPPER_CASE = 'toUpperCase';
   var METHOD_TO_LOWER_CASE = 'toLowerCase';
 
-  var METER_TAG_NAME = '<%= METER_TAG_NAME %>';
-  var METER_INTERFACE = '<%= METER_INTERFACE %>';
-  var VERSION = '<%= VERSION %>';
+  var METER_TAG_NAME = 'FMETER';
+  var METER_INTERFACE = 'HTMLFakeMeterElement';
+  var VERSION = '1.6.1';
 
   var NOOP = function() {}; // eslint no-empty-function: 0
   var TRUE = true;
@@ -949,3 +963,7 @@
   meterPolyfill.LEVEL_OPTIMUM = LEVEL_OPTIMUM;
   meterPolyfill.LEVEL_SUBSUBOPTIMUM = LEVEL_SUBSUBOPTIMUM;
   meterPolyfill.calc = meterCalculator;
+
+
+  return meterPolyfill;
+});

@@ -1,16 +1,21 @@
+/* globals define: true, module: true*/
+(function(root, factory) {
+  'use strict';
 
+  if (typeof define === 'function' && define.amd) {
+    define(function() {return factory(root);});
+  } else if (typeof module === 'object' && module.exports) {
+    module.exports = factory(root);
+  } else {
+    root.meterPolyfill = factory(root);
+  }
+})(this, function(window) {
+  'use strict';
 
   var document = window.document;
 
-  /**
-   * throw Error
-   * @private
-   * @param  {String} message Error message
-   * @param  {Error} constructor Error constructor
-   * @return {Void}
-   */
   function throwError(message, constructor) {
-    throw new (constructor || Error)(message);
+    throw new(constructor || Error)(message);
   }
 
   if (!document) {
@@ -23,10 +28,10 @@
   var METHOD_TO_LOWER_CASE = 'toLowerCase';
 
   var METER_TAG_NAME = 'METER';
+  var METER_INTERFACE = 'HTMLMeterElement';
   var VERSION = '1.6.1';
 
-  /* eslint no-empty-function: 0 */
-  var NOOP = function() {};
+  var NOOP = function() {}; // eslint no-empty-function: 0
   var TRUE = true;
   var FALSE = false;
   var NULL = null;
@@ -67,6 +72,12 @@
 
   var toFloat = Number.parseFloat || parseFloat;
 
+  /**
+   * return value less than high
+   * @param  {Number} value
+   * @param  {Number} high
+   * @return {Number}
+   */
   // function lessThan(value, high) {
   //   if (value > high) {
   //     value = high;
@@ -74,6 +85,12 @@
   //   return value;
   // }
 
+  /**
+   * return value greater than low
+   * @param  {Number} value
+   * @param  {Number} low
+   * @return {Number}
+   */
   function greaterThan(value, low) {
     if (value < low) {
       value = low;
@@ -249,9 +266,9 @@
       }
 
       if (
-          (optimum > high && value === high) ||
-          (optimum < low && value === low)
-       ) {
+        (optimum > high && value === high) ||
+        (optimum < low && value === low)
+      ) {
         level = LEVEL_SUBOPTIMUM;
       }
     }
@@ -284,6 +301,8 @@
   var slice = arrayPrototype[METHOD_SLICE];
   var apply = funcPrototype[METHOD_APPLY];
   var concat = arrayPrototype[METHOD_CONCAT];
+  var bind = funcPrototype.bind;
+  var create = oObject.create;
 
   var funcToString = funcPrototype[METHOD_TO_STRING];
   var TO_STRING = '' + funcToString;
@@ -302,26 +321,32 @@
     return funcApplyCall(concat, arrLike, args);
   }
 
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-  var bind = funcPrototype.bind || function(oThis) {
-    var args = arraySliceCall(arguments, 1);
-    var funcToBind = this;
-    return function() {
-      args = arrayConcatCall(args, arguments);
-      return funcApplyCall(funcToBind, oThis, args);
+  if (!bind) {
+    // simple bind
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+    bind = function(oThis) {
+      var args = arraySliceCall(arguments, 1);
+      var funcToBind = this;
+      return function() {
+        args = arrayConcatCall(args, arguments);
+        return funcApplyCall(funcToBind, oThis, args);
+      };
     };
-  };
+  }
 
   function funcBindCall(func) {
     return funcApplyCall(bind, func, arraySliceCall(arguments, 1));
   }
 
-  var create = oObject.create || function(proto) {
-    // simple but enough
-    NOOP[PROP_PROTOTYPE] = proto;
-    return new NOOP();
-  };
+  if (!create) {
+    create = function(proto) {
+      // simple but enough
+      NOOP[PROP_PROTOTYPE] = proto;
+      return new NOOP();
+    };
+  }
 
+  // is Array.prototype includes/indexOf Faster?
   function includes(arrLike, v) {
     var found = FALSE;
     each(arrLike, function(item) {
@@ -342,6 +367,7 @@
 
   // cache toStingFunctions
   var toStingFns = {};
+
   function pretendNativeFunction(funcName, func) {
     func[METHOD_TO_STRING] = toStingFns[funcName] ||
       (toStingFns[funcName] = (function() {
@@ -356,12 +382,13 @@
 
   var PROP_GET = 'get';
   var PROP_SET = 'set';
+
   function getOwnPropertyDescriptor(o, property) {
     if (objectGetOwnPropertyDescriptor) {
       // ie <= 8 fails
       try {
         return objectGetOwnPropertyDescriptor(o, property);
-      } catch(_) {}
+      } catch (_) {}
     }
 
     var METHOD_LOOKUP_SETTER = '__looupSetter__';
@@ -432,7 +459,7 @@
   // ie 7 document.createElement.apply is undefined
   // var createElement = (function(createElement) {
   //   return function() {
-  //     return funcApplyCall(createElement, document, arguments);
+  //   return funcApplyCall(createElement, document, arguments);
   //   };
   // })(document[METHOD_CREATE_ELEMENT]);
   var createElement = funcBindCall(document[METHOD_CREATE_ELEMENT], document);
@@ -487,11 +514,6 @@
     return defaultMsg;
   }
 
-  var HTML_METER_ELEMENT_INTERFACE = 'HTML' +
-    METER_TAG_NAME.charAt(0)[METHOD_TO_UPPER_CASE]() +
-    METER_TAG_NAME[METHOD_SLICE](1)[METHOD_TO_LOWER_CASE]() +
-    'Element';
-
   var noFiniteMsgs = (function() {
     // find right msg by test on a non-finite prop of known element
     // posiable currentTime/playbackRate/volume on HTMLMediaElement
@@ -502,10 +524,10 @@
       if (Audio) {
         new Audio()[PROP_VOLUME] = 'x';
       }
-    }, HTML_METER_ELEMENT_INTERFACE + '.' + PROP_VOLUME + ' error');
+    }, METER_INTERFACE + '.' + PROP_VOLUME + ' error');
     var MSG_NON_FINITE = errorMsgNonFinite
-        .replace('HTMLMediaElement', HTML_METER_ELEMENT_INTERFACE)
-        .replace(PROP_VOLUME, PROP_PLACEHOLDER);
+      .replace('HTMLMediaElement', METER_INTERFACE)
+      .replace(PROP_VOLUME, PROP_PLACEHOLDER);
 
     var msgs = {};
     each(METER_PROPS, function(prop) {
@@ -521,8 +543,7 @@
     props[PROP_MAX] = [PROP_MIN];
     props[PROP_LOW] =
       props[PROP_OPTIMUM] =
-      props[PROP_VALUE] =
-      [PROP_MIN, PROP_MAX];
+      props[PROP_VALUE] = [PROP_MIN, PROP_MAX];
     props[PROP_HIGH] = [PROP_MIN, PROP_MAX, PROP_LOW];
 
     each(METER_PROPS, function(prop) {
@@ -571,7 +592,7 @@
         (label.control === meter) ||
         (!propFor && label[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG_NAME)[0] === meter) ||
         (propFor && propFor === propId)
-        ) {
+      ) {
         assignedLables[i++] = label;
       }
     });
@@ -580,11 +601,11 @@
   }
 
   function getPropDescriptor(getter, setter) {
-    return {enumerable: TRUE, get: getter, set: setter};
+    return { enumerable: TRUE, get: getter, set: setter };
   }
 
   function getValueDescriptor(value) {
-    return {value: value};
+    return { value: value };
   }
 
   var meterDescriptors = (function() {
@@ -599,7 +620,6 @@
     return descriptors;
   })();
 
-
   var HTMLMeterElement = (function(HTMLMeterElement) {
     var MSG_ILLEAGE_CONSTRUCTOR = getErrorMessage(function() {
       HTMLElement && new HTMLElement();
@@ -607,14 +627,14 @@
 
     var HTMLMeterElementPrototype;
     if (!HTMLMeterElement) {
-      HTMLMeterElement = window[HTML_METER_ELEMENT_INTERFACE] = function() {
+      HTMLMeterElement = window[METER_INTERFACE] = function() {
         throwTypeError(MSG_ILLEAGE_CONSTRUCTOR);
       };
       HTMLMeterElementPrototype = create(HTMLElement[PROP_PROTOTYPE]);
       HTMLMeterElementPrototype[PROP_CONSTRUCTOR] = HTMLMeterElement;
       HTMLMeterElement[PROP_PROTOTYPE] = HTMLMeterElementPrototype;
       HTMLMeterElement[PROP_PROTO] = HTMLElement;
-      HTMLMeterElement = pretendNativeFunction(HTML_METER_ELEMENT_INTERFACE, HTMLMeterElement);
+      HTMLMeterElement = pretendNativeFunction(METER_INTERFACE, HTMLMeterElement);
     } else {
       HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
     }
@@ -632,7 +652,7 @@
     });
 
     return HTMLMeterElement;
-  })(window[HTML_METER_ELEMENT_INTERFACE]);
+  })(window[METER_INTERFACE]);
 
   var meterPolyfill = meterElement[PROP_CONSTRUCTOR] === HTMLMeterElement ? NOOP : (function() {
     /* polyfill starts */
@@ -707,10 +727,10 @@
 
     var METER_SHADOW_HTML = [
       DIV_OPENING_TAG + METER_CLASS_PREFIX + 'inner-element">',
-        DIV_OPENING_TAG + METER_CLASS_PREFIX + 'bar">',
-          DIV_OPENING_TAG + METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] + '" style="width: 0%">',
-          DIV_CLOSING_TAG,
-        DIV_CLOSING_TAG,
+      DIV_OPENING_TAG + METER_CLASS_PREFIX + 'bar">',
+      DIV_OPENING_TAG + METER_VALUE_CLASSES[LEVEL_SUBOPTIMUM] + '" style="width: 0%">',
+      DIV_CLOSING_TAG,
+      DIV_CLOSING_TAG,
       DIV_CLOSING_TAG
     ].join('');
 
@@ -944,3 +964,6 @@
   meterPolyfill.LEVEL_SUBSUBOPTIMUM = LEVEL_SUBSUBOPTIMUM;
   meterPolyfill.calc = meterCalculator;
 
+
+  return meterPolyfill;
+});

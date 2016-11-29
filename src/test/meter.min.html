@@ -10,7 +10,10 @@
   <meta name="description" content="Polyfill for meter element.">
   <link rel="stylesheet" href="polyfill.css">
   <link rel="stylesheet" href="test.css">
-  <script>var METER_TAG_NAME = '<%= METER_TAG_NAME %>';</script>
+  <script>
+  var METER_TAG_NAME = '<%= METER_TAG_NAME %>';
+  var METER_INTERFACE = '<%= METER_INTERFACE %>';
+  </script>
   <!--[if lt IE 9]><script>document.createElement(METER_TAG_NAME)</script><![endif]-->
 </head>
 <body>

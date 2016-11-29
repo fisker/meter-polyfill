@@ -19,9 +19,9 @@ bower install --save meter-polyfill
 
 https://fisker.github.io/meter-polyfill/test/meter/meter.html
 
-for browsers supports `meter`, use `fakemeter` to test
+for browsers supports `meter`, use `fmeter` to test
 
-https://fisker.github.io/meter-polyfill/test/fakemeter/meter.html
+https://fisker.github.io/meter-polyfill/test/fmeter/meter.html
 
 ## api
 ```javascript
@@ -34,7 +34,6 @@ meterPolyfill([meter1,meter2])// arrays
 meterPolyfill([div1,div2])// arrays
 
 meterPolyfill.version // version number
-meterPolyfill.support // native `meter` support
 meterPolyfill.CLASSES // class list of value element
 meterPolyfill.LEVEL_SUBOPTIMUM // LEVEL_SUBOPTIMUM;
 meterPolyfill.LEVEL_OPTIMUM // LEVEL_OPTIMUM;
