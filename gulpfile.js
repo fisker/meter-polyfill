@@ -208,7 +208,8 @@ gulp.task('release', ['scripts:release','scripts:min', 'styles:release', 'styles
 gulp.task('test:server', function() {
   browserSync.init({
     server: {
-      baseDir: './test/'
+      baseDir: './test/fmeter/',
+      index: 'meter.html'
     }
   });
 
