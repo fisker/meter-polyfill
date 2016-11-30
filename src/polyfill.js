@@ -188,6 +188,7 @@
       default:
         break;
     }
+
     return value;
   }
 
@@ -275,6 +276,7 @@
   var METHOD_CONCAT = 'concat';
   var METHOD_SLICE = 'slice';
   var METHOD_TO_STRING = 'toString';
+  var METHOD_JOIN = 'join';
 
   var oObject = Object;
   var arrayPrototype = Array[PROP_PROTOTYPE];
@@ -282,13 +284,13 @@
   // var objPrototype = oObject[PROP_PROTOTYPE];
 
   var objectDefineProperty = oObject.defineProperty;
-  var objectGetOwnPropertyDescriptor = oObject.getOwnPropertyDescriptor;
 
   var slice = arrayPrototype[METHOD_SLICE];
   var apply = funcPrototype[METHOD_APPLY];
   var concat = arrayPrototype[METHOD_CONCAT];
   var bind = funcPrototype.bind;
   var create = oObject.create;
+  var join = arrayPrototype[METHOD_JOIN];
 
   var funcToString = funcPrototype[METHOD_TO_STRING];
   var TO_STRING = '' + funcToString;
@@ -302,9 +304,17 @@
     return funcApplyCall(slice, arrLike, args);
   }
 
-  function arrayConcatCall(arrLike) {
-    var args = arraySliceCall(arguments, 1);
-    return funcApplyCall(concat, arrLike, args);
+  function funcCallCall(func, oThis) {
+    var args = arraySliceCall(arguments, 2);
+    return funcApplyCall(func, oThis, args);
+  }
+
+  function arrayConcatCall(arrLike, arrLike2) {
+    return funcCallCall(concat, arrLike, arrLike2);
+  }
+
+  function arrayJoinCall(arrLike, separator) {
+    return funcCallCall(join, arrLike, separator);
   }
 
   if (!bind) {
@@ -344,6 +354,18 @@
     return found;
   }
 
+  function memorize(func) {
+    var cache = {};
+    return function() {
+      var args = arguments;
+      var key = arrayJoinCall(args, '_');
+      if (!(key in cache)) {
+        cache[key] = funcApplyCall(func, NULL, args);
+      }
+      return cache[key];
+    }
+  }
+
   function throwTypeError(message) {
     throwError(message, TypeError);
   }
@@ -351,45 +373,21 @@
   var nativeToString = funcBindCall(funcToString, funcToString);
   nativeToString[METHOD_TO_STRING] = nativeToString;
 
-  // cache toStingFunctions
-  var toStingFns = {};
+  var getToStringFunc = memorize(function(funcName) {
+    function toString() {
+      return TO_STRING.replace(METHOD_TO_STRING, funcName);
+    }
+    toString[METHOD_TO_STRING] = nativeToString;
+    return toString;
+  });
 
   function pretendNativeFunction(funcName, func) {
-    func[METHOD_TO_STRING] = toStingFns[funcName] ||
-      (toStingFns[funcName] = (function() {
-        function toString() {
-          return TO_STRING.replace(METHOD_TO_STRING, funcName);
-        }
-        toString[METHOD_TO_STRING] = nativeToString;
-        return toString;
-      })());
+    func[METHOD_TO_STRING] = getToStringFunc(funcName);
     return func;
   }
 
   var PROP_GET = 'get';
   var PROP_SET = 'set';
-
-  function getOwnPropertyDescriptor(o, property) {
-    if (objectGetOwnPropertyDescriptor) {
-      // ie <= 8 fails
-      try {
-        return objectGetOwnPropertyDescriptor(o, property);
-      } catch (_) {}
-    }
-
-    var METHOD_LOOKUP_SETTER = '__looupSetter__';
-    var METHOD_LOOKUP_GETTER = '__lookupGetter__';
-    var descriptor = {};
-    if (METHOD_LOOKUP_GETTER in o) {
-      descriptor[PROP_GET] = o[METHOD_LOOKUP_GETTER](property);
-    } else {
-      descriptor[PROP_VALUE] = descriptor[PROP_VALUE];
-    }
-    if (METHOD_LOOKUP_SETTER in o) {
-      descriptor[PROP_SET] = o[METHOD_LOOKUP_SETTER](property);
-    }
-    return descriptor;
-  }
 
   function defineProperty(o, property, descriptor) {
     if (objectDefineProperty) {
@@ -428,6 +426,7 @@
 
   var PROP_ID = 'id';
   var PROP_FOR = 'htmlFor';
+  var PROP_CONTROL = 'control';
 
   var METHOD_GET_ELEMENTS_BY_TAG_NAME = 'getElementsByTagName';
   var METHOD_SET_ATTRIBUTE = 'setAttribute';
@@ -443,11 +442,6 @@
 
   // ie 8 document.createElement is not a function
   // ie 7 document.createElement.apply is undefined
-  // var createElement = (function(createElement) {
-  //   return function() {
-  //   return funcApplyCall(createElement, document, arguments);
-  //   };
-  // })(document[METHOD_CREATE_ELEMENT]);
   var createElement = funcBindCall(document[METHOD_CREATE_ELEMENT], document);
 
   function isElement(el, tagName) {
@@ -456,7 +450,6 @@
   }
 
   (function(HTMLLabelElement) {
-    var PROP_CONTROL = 'control';
     var LABELABLE_ELEMENTS = ('BUTTON INPUT KEYGEN ' + METER_TAG_NAME + ' OUTPUT PROGRESS SELECT TEXTAREA').split(' ');
 
     function findLabelAssociatedElement() {
@@ -469,13 +462,11 @@
       var childNodes = label.getElementsByTagName('*');
       var associated = NULL;
       each(childNodes, function(node) {
-        each(LABELABLE_ELEMENTS, function(tagName) {
-          if (isElement(node, tagName)) {
-            associated = node;
-            return false;
-          }
-        });
-        return !associated;
+        var tagName = node.tagName[METHOD_TO_UPPER_CASE]();
+        if (includes(LABELABLE_ELEMENTS, tagName)) {
+          associated = node;
+          return FALSE;
+        }
       });
 
       return associated;
@@ -485,8 +476,7 @@
     if (!HTMLLabelElementPrototype) {
       return;
     }
-    var descriptor = getOwnPropertyDescriptor(HTMLLabelElementPrototype, PROP_CONTROL);
-    if (!descriptor) {
+    if (!HTMLLabelElementPrototype[PROP_CONTROL]) {
       defineProperty(HTMLLabelElementPrototype, PROP_CONTROL, getPropDescriptor(findLabelAssociatedElement));
     }
   })(window.HTMLLabelElement);
@@ -500,30 +490,42 @@
     return defaultMsg;
   }
 
-  var noFiniteMsgs = (function() {
-    // find right msg by test on a non-finite prop of known element
-    // posiable currentTime/playbackRate/volume on HTMLMediaElement
-    // safari fails
+  // find right msg by test on a non-finite prop of known element
+  var PROP_PLACEHOLDER = '{prop}';
+  var MSG_NON_FINITE = (function() {
     var PROP_VOLUME = 'volume';
-    var PROP_PLACEHOLDER = '[prop]';
-    var errorMsgNonFinite = getErrorMessage(function() {
+    var audioNonFiniteMsg = getErrorMessage(function() {
       if (Audio) {
         new Audio()[PROP_VOLUME] = 'x';
       }
-    }, METER_INTERFACE + '.' + PROP_VOLUME + ' error');
-    var MSG_NON_FINITE = errorMsgNonFinite
-      .replace('HTMLMediaElement', METER_INTERFACE)
-      .replace(PROP_VOLUME, PROP_PLACEHOLDER);
-
-    var msgs = {};
-    each(METER_PROPS, function(prop) {
-      msgs[prop] = MSG_NON_FINITE.replace(PROP_PLACEHOLDER, prop);
     });
-    return msgs;
+
+    if (audioNonFiniteMsg) {
+      return audioNonFiniteMsg
+        .replace('HTMLMediaElement', METER_INTERFACE)
+        .replace(PROP_VOLUME, PROP_PLACEHOLDER);
+    }
+
+    var progressNonFiniteMsg = getErrorMessage(function() {
+      var progress = createElement('PROGRESS');
+      progress[PROP_MAX] = 'x';
+    });
+
+    if (progressNonFiniteMsg) {
+      return progressNonFiniteMsg
+        .replace('HTMLProgressElement', METER_INTERFACE)
+        .replace(PROP_MAX, PROP_PLACEHOLDER);
+    }
+
+    return METER_INTERFACE + '.' + PROP_VOLUME + ' error';
   })();
 
+  var getNonFiniteMsgs = memorize(function(prop) {
+    return MSG_NON_FINITE.replace(PROP_PLACEHOLDER, prop);
+  });
+
   // only get necessary props
-  var propDependencies = (function() {
+  var getPropDependencies = memorize(function(prop) {
     var props = {};
     props[PROP_MIN] = [];
     props[PROP_MAX] = [PROP_MIN];
@@ -531,12 +533,8 @@
       props[PROP_OPTIMUM] =
       props[PROP_VALUE] = [PROP_MIN, PROP_MAX];
     props[PROP_HIGH] = [PROP_MIN, PROP_MAX, PROP_LOW];
-
-    each(METER_PROPS, function(prop) {
-      props[prop] = arrayConcatCall(props[prop], [prop]);
-    });
-    return props;
-  })();
+    return arrayConcatCall(props[prop], [prop]);
+  });
 
 
   var METHOD_GET_ATTRIBUTE = 'getAttribute';
@@ -545,7 +543,7 @@
     return function() {
       var meter = this;
       var propValues = {};
-      each(propDependencies[prop], function(prop) {
+      each(getPropDependencies(prop), function(prop) {
         propValues[prop] = parseValue(meter[METHOD_GET_ATTRIBUTE](prop));
       });
 
@@ -557,7 +555,7 @@
     return function(value) {
       var meter = this;
       if (!isValidValue(value)) {
-        throwTypeError(noFiniteMsgs[prop]);
+        throwTypeError(getNonFiniteMsgs(prop));
       }
 
       meter[METHOD_SET_ATTRIBUTE](prop, '' + parseValue(value, 0));
@@ -575,7 +573,7 @@
       var propFor = label[PROP_FOR];
 
       if (
-        (label.control === meter) ||
+        (label[PROP_CONTROL] === meter) ||
         (!propFor && label[METHOD_GET_ELEMENTS_BY_TAG_NAME](METER_TAG_NAME)[0] === meter) ||
         (propFor && propFor === propId)
       ) {
@@ -594,17 +592,14 @@
     return { value: value };
   }
 
-  var meterDescriptors = (function() {
-    var descriptors = {};
-    each(METER_PROPS, function(prop) {
-      descriptors[prop] = getPropDescriptor(
+  var getMeterDescriptors = memorize(function(prop) {
+    return prop === PROP_LABELS ?
+      getPropDescriptor(lablesGetter) :
+      getPropDescriptor(
         getPropGetter(prop),
         getPropSetter(prop)
       );
-    });
-    descriptors[PROP_LABELS] = getPropDescriptor(lablesGetter);
-    return descriptors;
-  })();
+  });
 
   var HTMLMeterElement = (function(HTMLMeterElement) {
     var MSG_ILLEAGE_CONSTRUCTOR = getErrorMessage(function() {
@@ -625,15 +620,13 @@
       HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
     }
 
-    var labelsDescriptor = getOwnPropertyDescriptor(HTMLMeterElementPrototype, PROP_LABELS);
-    if (!labelsDescriptor) {
-      defineProperty(HTMLMeterElementPrototype, PROP_LABELS, meterDescriptors[PROP_LABELS]);
+    if (!HTMLMeterElementPrototype[PROP_LABELS]) {
+      defineProperty(HTMLMeterElementPrototype, PROP_LABELS, getMeterDescriptors(PROP_LABELS));
     }
 
     each(METER_PROPS, function(prop) {
-      var descriptor = getOwnPropertyDescriptor(HTMLMeterElementPrototype, prop);
-      if (!descriptor) {
-        defineProperty(HTMLMeterElementPrototype, prop, meterDescriptors[prop]);
+      if (!HTMLMeterElementPrototype[prop]) {
+        defineProperty(HTMLMeterElementPrototype, prop, getMeterDescriptors(prop));
       }
     });
 
@@ -718,7 +711,7 @@
       DIV_CLOSING_TAG,
       DIV_CLOSING_TAG,
       DIV_CLOSING_TAG
-    ].join('');
+    ][METHOD_JOIN]('');
 
     var setTimeout = window.setTimeout;
     var setInterval = window.setInterval;
@@ -809,11 +802,11 @@
 
       if (!SUPPORTS_ATTERS_AS_PROPS) {
         each(METER_PROPS, function(prop) {
-          properties[prop] = meterDescriptors[prop];
+          properties[prop] = getMeterDescriptors(prop);
         });
       }
 
-      properties[PROP_LABELS] = meterDescriptors[PROP_LABELS];
+      properties[PROP_LABELS] = getMeterDescriptors(PROP_LABELS);
 
       if (!SUPPORTS_ATTERS_AS_PROPS) {
         var setAttribute = funcBindCall(meter[METHOD_SET_ATTRIBUTE], meter);
