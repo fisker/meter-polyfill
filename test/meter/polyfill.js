@@ -29,7 +29,7 @@
 
   var METER_TAG_NAME = 'METER';
   var METER_INTERFACE = 'HTMLMeterElement';
-  var VERSION = '1.6.1';
+  var VERSION = '1.7.1';
 
   var NOOP = function() {}; // eslint no-empty-function: 0
   var TRUE = true;
