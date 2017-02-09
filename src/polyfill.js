@@ -119,7 +119,7 @@
   }
 
   function parseValue(value, valueForNull) {
-    if (isUndefined(valueForNull)) {
+    if (arguments.length === 1) {
       valueForNull = NULL;
     }
     return !isValidValue(value) || isNull(value) ?
