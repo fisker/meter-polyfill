@@ -133,7 +133,7 @@
   }
 
   function parseValue(value, valueForNull) {
-    if (isUndefined(valueForNull)) {
+    if (arguments.length === 1) {
       valueForNull = NULL;
     }
     return !isValidValue(value) || isNull(value) ?
@@ -490,7 +490,7 @@
     if (!HTMLLabelElementPrototype) {
       return;
     }
-    if (!HTMLLabelElementPrototype[PROP_CONTROL]) {
+    if (!(PROP_CONTROL in HTMLLabelElementPrototype)) {
       defineProperty(HTMLLabelElementPrototype, PROP_CONTROL, getPropDescriptor(findLabelAssociatedElement));
     }
   })(window.HTMLLabelElement);
@@ -628,7 +628,6 @@
       HTMLMeterElementPrototype = create(HTMLElement[PROP_PROTOTYPE]);
       HTMLMeterElementPrototype[PROP_CONSTRUCTOR] = HTMLMeterElement;
       HTMLMeterElement[PROP_PROTOTYPE] = HTMLMeterElementPrototype;
-      HTMLMeterElement[PROP_PROTO] = HTMLElement;
       HTMLMeterElement = pretendNativeFunction(METER_INTERFACE, HTMLMeterElement);
     } else {
       HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
@@ -639,7 +638,7 @@
     }
 
     each(METER_PROPS, function(prop) {
-      if (!HTMLMeterElementPrototype[prop]) {
+      if (!(prop in HTMLMeterElementPrototype)) {
         defineProperty(HTMLMeterElementPrototype, prop, getMeterDescriptors(prop));
       }
     });
@@ -858,10 +857,9 @@
       properties[METHOD_CLONE_NODE] = getValueDescriptor(methodCloneNode);
       properties[POLYFILL_FLAG] = getValueDescriptor(VERSION);
 
-      if (meter[PROP_CONSTRUCTOR] !== HTMLMeterElement) {
-        properties[PROP_CONSTRUCTOR] = getValueDescriptor(HTMLMeterElement);
+      if (meter[PROP_PROTO] !== HTMLMeterElement[PROP_PROTOTYPE]) {
+        meter[PROP_PROTO] = HTMLMeterElement[PROP_PROTOTYPE];
       }
-
 
       for (var prop in properties) {
         if (properties.hasOwnProperty(prop)) {

@@ -476,7 +476,7 @@
     if (!HTMLLabelElementPrototype) {
       return;
     }
-    if (!HTMLLabelElementPrototype[PROP_CONTROL]) {
+    if (!(PROP_CONTROL in HTMLLabelElementPrototype)) {
       defineProperty(HTMLLabelElementPrototype, PROP_CONTROL, getPropDescriptor(findLabelAssociatedElement));
     }
   })(window.HTMLLabelElement);
@@ -614,7 +614,6 @@
       HTMLMeterElementPrototype = create(HTMLElement[PROP_PROTOTYPE]);
       HTMLMeterElementPrototype[PROP_CONSTRUCTOR] = HTMLMeterElement;
       HTMLMeterElement[PROP_PROTOTYPE] = HTMLMeterElementPrototype;
-      HTMLMeterElement[PROP_PROTO] = HTMLElement;
       HTMLMeterElement = pretendNativeFunction(METER_INTERFACE, HTMLMeterElement);
     } else {
       HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
@@ -625,7 +624,7 @@
     }
 
     each(METER_PROPS, function(prop) {
-      if (!HTMLMeterElementPrototype[prop]) {
+      if (!(prop in HTMLMeterElementPrototype)) {
         defineProperty(HTMLMeterElementPrototype, prop, getMeterDescriptors(prop));
       }
     });
@@ -847,7 +846,6 @@
       if (meter[PROP_CONSTRUCTOR] !== HTMLMeterElement) {
         properties[PROP_CONSTRUCTOR] = getValueDescriptor(HTMLMeterElement);
       }
-
 
       for (var prop in properties) {
         if (properties.hasOwnProperty(prop)) {
