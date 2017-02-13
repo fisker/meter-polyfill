@@ -1,6 +1,6 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.7.1
+ * @version v1.7.2
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
@@ -22,7 +22,7 @@
   var document = window.document;
 
   function throwError(message, constructor) {
-    throw new(constructor || Error)(message);
+    throw new (constructor || Error)(message);
   }
 
   if (!document) {
@@ -36,7 +36,7 @@
 
   var METER_TAG_NAME = 'METER';
   var METER_INTERFACE = 'HTMLMeterElement';
-  var VERSION = '1.7.1';
+  var VERSION = '1.7.2';
 
   var NOOP = function() {}; // eslint no-empty-function: 0
   var TRUE = true;
@@ -140,7 +140,7 @@
   }
 
   function parseValue(value, valueForNull) {
-    if (isUndefined(valueForNull)) {
+    if (arguments.length === 1) {
       valueForNull = NULL;
     }
     return !isValidValue(value) || isNull(value) ?
@@ -281,9 +281,9 @@
       }
     }
 
-    returnValues['percentage'] = percentage;
-    returnValues['level'] = level;
-    returnValues['className'] = METER_VALUE_CLASSES[level];
+    returnValues.percentage = percentage;
+    returnValues.level = level;
+    returnValues.className = METER_VALUE_CLASSES[level];
 
     return returnValues;
   }
@@ -384,7 +384,7 @@
         cache[key] = funcApplyCall(func, NULL, args);
       }
       return cache[key];
-    }
+    };
   }
 
   function throwTypeError(message) {
@@ -471,7 +471,11 @@
   }
 
   (function(HTMLLabelElement) {
-    var LABELABLE_ELEMENTS = ('BUTTON INPUT KEYGEN ' + METER_TAG_NAME + ' OUTPUT PROGRESS SELECT TEXTAREA').split(' ');
+    var LABELABLE_ELEMENTS = (
+      'BUTTON INPUT KEYGEN ' +
+      METER_TAG_NAME +
+      ' OUTPUT PROGRESS SELECT TEXTAREA'
+      ).split(' ');
 
     function findLabelAssociatedElement() {
       var label = this;
@@ -497,8 +501,12 @@
     if (!HTMLLabelElementPrototype) {
       return;
     }
-    if (!HTMLLabelElementPrototype[PROP_CONTROL]) {
-      defineProperty(HTMLLabelElementPrototype, PROP_CONTROL, getPropDescriptor(findLabelAssociatedElement));
+    if (!(PROP_CONTROL in HTMLLabelElementPrototype)) {
+      defineProperty(
+        HTMLLabelElementPrototype,
+        PROP_CONTROL,
+        getPropDescriptor(findLabelAssociatedElement)
+        );
     }
   })(window.HTMLLabelElement);
 
@@ -569,7 +577,7 @@
       });
 
       return getPropValue(propValues, prop);
-    }
+    };
   }
 
   function getPropSetter(prop) {
@@ -606,11 +614,17 @@
   }
 
   function getPropDescriptor(getter, setter) {
-    return { enumerable: TRUE, get: getter, set: setter };
+    return {
+      enumerable: TRUE,
+      get: getter,
+      set: setter
+    };
   }
 
   function getValueDescriptor(value) {
-    return { value: value };
+    return {
+      value: value
+    };
   }
 
   var getMeterDescriptors = memorize(function(prop) {
@@ -628,17 +642,16 @@
     }, 'Illegal constructor');
 
     var HTMLMeterElementPrototype;
-    if (!HTMLMeterElement) {
+    if (HTMLMeterElement) {
+      HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
+    } else {
       HTMLMeterElement = window[METER_INTERFACE] = function() {
         throwTypeError(MSG_ILLEAGE_CONSTRUCTOR);
       };
       HTMLMeterElementPrototype = create(HTMLElement[PROP_PROTOTYPE]);
       HTMLMeterElementPrototype[PROP_CONSTRUCTOR] = HTMLMeterElement;
       HTMLMeterElement[PROP_PROTOTYPE] = HTMLMeterElementPrototype;
-      HTMLMeterElement[PROP_PROTO] = HTMLElement;
       HTMLMeterElement = pretendNativeFunction(METER_INTERFACE, HTMLMeterElement);
-    } else {
-      HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
     }
 
     if (!HTMLMeterElementPrototype[PROP_LABELS]) {
@@ -646,7 +659,7 @@
     }
 
     each(METER_PROPS, function(prop) {
-      if (!HTMLMeterElementPrototype[prop]) {
+      if (!(prop in HTMLMeterElementPrototype)) {
         defineProperty(HTMLMeterElementPrototype, prop, getMeterDescriptors(prop));
       }
     });
@@ -819,15 +832,20 @@
 
     function defineMeterProperties(meter) {
       var HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
+
+      meter[PROP_PROTO] = HTMLMeterElementPrototype;
+      meter[POLYFILL_FLAG] = VERSION;
+
       var properties = {};
 
-      if (!SUPPORTS_ATTERS_AS_PROPS) {
-        each(METER_PROPS, function(prop) {
-          properties[prop] = getMeterDescriptors(prop);
-        });
-      }
+      // if (!SUPPORTS_ATTERS_AS_PROPS) {
+      //   each(METER_PROPS, function(prop) {
+      //     properties[prop] = getMeterDescriptors(prop);
+      //   });
+      // }
 
-      properties[PROP_LABELS] = getMeterDescriptors(PROP_LABELS);
+      // properties[PROP_LABELS] = getMeterDescriptors(PROP_LABELS);
+      // properties[POLYFILL_FLAG] = getMeterDescriptors(VERSION);
 
       if (!SUPPORTS_ATTERS_AS_PROPS) {
         var setAttribute = funcBindCall(meter[METHOD_SET_ATTRIBUTE], meter);
@@ -863,12 +881,6 @@
       });
 
       properties[METHOD_CLONE_NODE] = getValueDescriptor(methodCloneNode);
-      properties[POLYFILL_FLAG] = getValueDescriptor(VERSION);
-
-      if (meter[PROP_CONSTRUCTOR] !== HTMLMeterElement) {
-        properties[PROP_CONSTRUCTOR] = getValueDescriptor(HTMLMeterElement);
-      }
-
 
       for (var prop in properties) {
         if (properties.hasOwnProperty(prop)) {

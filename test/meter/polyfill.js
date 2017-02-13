@@ -15,7 +15,7 @@
   var document = window.document;
 
   function throwError(message, constructor) {
-    throw new(constructor || Error)(message);
+    throw new (constructor || Error)(message);
   }
 
   if (!document) {
@@ -29,7 +29,7 @@
 
   var METER_TAG_NAME = 'METER';
   var METER_INTERFACE = 'HTMLMeterElement';
-  var VERSION = '1.7.1';
+  var VERSION = '1.7.2';
 
   var NOOP = function() {}; // eslint no-empty-function: 0
   var TRUE = true;
@@ -274,9 +274,9 @@
       }
     }
 
-    returnValues['percentage'] = percentage;
-    returnValues['level'] = level;
-    returnValues['className'] = METER_VALUE_CLASSES[level];
+    returnValues.percentage = percentage;
+    returnValues.level = level;
+    returnValues.className = METER_VALUE_CLASSES[level];
 
     return returnValues;
   }
@@ -377,7 +377,7 @@
         cache[key] = funcApplyCall(func, NULL, args);
       }
       return cache[key];
-    }
+    };
   }
 
   function throwTypeError(message) {
@@ -464,7 +464,11 @@
   }
 
   (function(HTMLLabelElement) {
-    var LABELABLE_ELEMENTS = ('BUTTON INPUT KEYGEN ' + METER_TAG_NAME + ' OUTPUT PROGRESS SELECT TEXTAREA').split(' ');
+    var LABELABLE_ELEMENTS = (
+      'BUTTON INPUT KEYGEN ' +
+      METER_TAG_NAME +
+      ' OUTPUT PROGRESS SELECT TEXTAREA'
+      ).split(' ');
 
     function findLabelAssociatedElement() {
       var label = this;
@@ -491,7 +495,11 @@
       return;
     }
     if (!(PROP_CONTROL in HTMLLabelElementPrototype)) {
-      defineProperty(HTMLLabelElementPrototype, PROP_CONTROL, getPropDescriptor(findLabelAssociatedElement));
+      defineProperty(
+        HTMLLabelElementPrototype,
+        PROP_CONTROL,
+        getPropDescriptor(findLabelAssociatedElement)
+        );
     }
   })(window.HTMLLabelElement);
 
@@ -562,7 +570,7 @@
       });
 
       return getPropValue(propValues, prop);
-    }
+    };
   }
 
   function getPropSetter(prop) {
@@ -599,11 +607,17 @@
   }
 
   function getPropDescriptor(getter, setter) {
-    return { enumerable: TRUE, get: getter, set: setter };
+    return {
+      enumerable: TRUE,
+      get: getter,
+      set: setter
+    };
   }
 
   function getValueDescriptor(value) {
-    return { value: value };
+    return {
+      value: value
+    };
   }
 
   var getMeterDescriptors = memorize(function(prop) {
@@ -621,7 +635,9 @@
     }, 'Illegal constructor');
 
     var HTMLMeterElementPrototype;
-    if (!HTMLMeterElement) {
+    if (HTMLMeterElement) {
+      HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
+    } else {
       HTMLMeterElement = window[METER_INTERFACE] = function() {
         throwTypeError(MSG_ILLEAGE_CONSTRUCTOR);
       };
@@ -629,8 +645,6 @@
       HTMLMeterElementPrototype[PROP_CONSTRUCTOR] = HTMLMeterElement;
       HTMLMeterElement[PROP_PROTOTYPE] = HTMLMeterElementPrototype;
       HTMLMeterElement = pretendNativeFunction(METER_INTERFACE, HTMLMeterElement);
-    } else {
-      HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
     }
 
     if (!HTMLMeterElementPrototype[PROP_LABELS]) {
@@ -811,15 +825,20 @@
 
     function defineMeterProperties(meter) {
       var HTMLMeterElementPrototype = HTMLMeterElement[PROP_PROTOTYPE];
+
+      meter[PROP_PROTO] = HTMLMeterElementPrototype;
+      meter[POLYFILL_FLAG] = VERSION;
+
       var properties = {};
 
-      if (!SUPPORTS_ATTERS_AS_PROPS) {
-        each(METER_PROPS, function(prop) {
-          properties[prop] = getMeterDescriptors(prop);
-        });
-      }
+      // if (!SUPPORTS_ATTERS_AS_PROPS) {
+      //   each(METER_PROPS, function(prop) {
+      //     properties[prop] = getMeterDescriptors(prop);
+      //   });
+      // }
 
-      properties[PROP_LABELS] = getMeterDescriptors(PROP_LABELS);
+      // properties[PROP_LABELS] = getMeterDescriptors(PROP_LABELS);
+      // properties[POLYFILL_FLAG] = getMeterDescriptors(VERSION);
 
       if (!SUPPORTS_ATTERS_AS_PROPS) {
         var setAttribute = funcBindCall(meter[METHOD_SET_ATTRIBUTE], meter);
@@ -855,11 +874,6 @@
       });
 
       properties[METHOD_CLONE_NODE] = getValueDescriptor(methodCloneNode);
-      properties[POLYFILL_FLAG] = getValueDescriptor(VERSION);
-
-      if (meter[PROP_PROTO] !== HTMLMeterElement[PROP_PROTOTYPE]) {
-        meter[PROP_PROTO] = HTMLMeterElement[PROP_PROTOTYPE];
-      }
 
       for (var prop in properties) {
         if (properties.hasOwnProperty(prop)) {
