@@ -1,6 +1,6 @@
 {
   "name": "meter-polyfill",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "Polyfill for the meter element",
   "main": "dist/meter-polyfill.js",
   "author": {
@@ -16,7 +16,9 @@
     "polyfill"
   ],
   "scripts": {
-    "test": "gulp"
+    "test": "gulp",
+    "dev": "gulp",
+    "build": "gulp release"
   },
   "repository": {
     "type": "git",

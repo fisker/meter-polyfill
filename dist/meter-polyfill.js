@@ -1,6 +1,6 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.7.2
+ * @version v1.7.3
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
@@ -36,7 +36,7 @@
 
   var METER_TAG_NAME = 'METER';
   var METER_INTERFACE = 'HTMLMeterElement';
-  var VERSION = '1.7.2';
+  var VERSION = '1.7.3';
 
   var NOOP = function() {}; // eslint no-empty-function: 0
   var TRUE = true;
@@ -375,7 +375,7 @@
     return found;
   }
 
-  function memorize(func) {
+  function memoize(func) {
     var cache = {};
     return function() {
       var args = arguments;
@@ -394,7 +394,7 @@
   var nativeToString = funcBindCall(funcToString, funcToString);
   nativeToString[METHOD_TO_STRING] = nativeToString;
 
-  var getToStringFunc = memorize(function(funcName) {
+  var getToStringFunc = memoize(function(funcName) {
     function toString() {
       return TO_STRING.replace(METHOD_TO_STRING, funcName);
     }
@@ -549,12 +549,12 @@
     return METER_INTERFACE + '.' + PROP_VOLUME + ' error';
   })();
 
-  var getNonFiniteMsgs = memorize(function(prop) {
+  var getNonFiniteMsgs = memoize(function(prop) {
     return MSG_NON_FINITE.replace(PROP_PLACEHOLDER, prop);
   });
 
   // only get necessary props
-  var getPropDependencies = memorize(function(prop) {
+  var getPropDependencies = memoize(function(prop) {
     var props = {};
     props[PROP_MIN] = [];
     props[PROP_MAX] = [PROP_MIN];
@@ -627,7 +627,7 @@
     };
   }
 
-  var getMeterDescriptors = memorize(function(prop) {
+  var getMeterDescriptors = memoize(function(prop) {
     return prop === PROP_LABELS ?
       getPropDescriptor(lablesGetter) :
       getPropDescriptor(
@@ -654,7 +654,7 @@
       HTMLMeterElement = pretendNativeFunction(METER_INTERFACE, HTMLMeterElement);
     }
 
-    if (!HTMLMeterElementPrototype[PROP_LABELS]) {
+    if (!meterElement || !meterElement[PROP_LABELS]) {
       defineProperty(HTMLMeterElementPrototype, PROP_LABELS, getMeterDescriptors(PROP_LABELS));
     }
 

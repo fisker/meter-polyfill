@@ -368,7 +368,7 @@
     return found;
   }
 
-  function memorize(func) {
+  function memoize(func) {
     var cache = {};
     return function() {
       var args = arguments;
@@ -387,7 +387,7 @@
   var nativeToString = funcBindCall(funcToString, funcToString);
   nativeToString[METHOD_TO_STRING] = nativeToString;
 
-  var getToStringFunc = memorize(function(funcName) {
+  var getToStringFunc = memoize(function(funcName) {
     function toString() {
       return TO_STRING.replace(METHOD_TO_STRING, funcName);
     }
@@ -542,12 +542,12 @@
     return METER_INTERFACE + '.' + PROP_VOLUME + ' error';
   })();
 
-  var getNonFiniteMsgs = memorize(function(prop) {
+  var getNonFiniteMsgs = memoize(function(prop) {
     return MSG_NON_FINITE.replace(PROP_PLACEHOLDER, prop);
   });
 
   // only get necessary props
-  var getPropDependencies = memorize(function(prop) {
+  var getPropDependencies = memoize(function(prop) {
     var props = {};
     props[PROP_MIN] = [];
     props[PROP_MAX] = [PROP_MIN];
@@ -620,7 +620,7 @@
     };
   }
 
-  var getMeterDescriptors = memorize(function(prop) {
+  var getMeterDescriptors = memoize(function(prop) {
     return prop === PROP_LABELS ?
       getPropDescriptor(lablesGetter) :
       getPropDescriptor(
@@ -647,7 +647,7 @@
       HTMLMeterElement = pretendNativeFunction(METER_INTERFACE, HTMLMeterElement);
     }
 
-    if (!HTMLMeterElementPrototype[PROP_LABELS]) {
+    if (!meterElement || !meterElement[PROP_LABELS]) {
       defineProperty(HTMLMeterElementPrototype, PROP_LABELS, getMeterDescriptors(PROP_LABELS));
     }
 

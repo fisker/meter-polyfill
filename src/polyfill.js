@@ -633,7 +633,7 @@
       HTMLMeterElement = pretendNativeFunction(METER_INTERFACE, HTMLMeterElement);
     }
 
-    if (!HTMLMeterElementPrototype[PROP_LABELS]) {
+    if (!meterElement || !meterElement[PROP_LABELS]) {
       defineProperty(HTMLMeterElementPrototype, PROP_LABELS, getMeterDescriptors(PROP_LABELS));
     }
 
