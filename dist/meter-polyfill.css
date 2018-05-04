@@ -1,6 +1,6 @@
 /**
  * meter-polyfill - Polyfill for the meter element
- * @version v1.7.2
+ * @version v1.7.3
  * @license MIT
  * @copyright fisker Cheung
  * @link https://github.com/fisker/meter-polyfill
@@ -9,8 +9,8 @@ meter {
   -moz-appearance: meterbar;
   -webkit-appearance: meter;
   -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
   display: inline-block;
   *display: inline;
   *zoom: 1;
@@ -23,27 +23,60 @@ meter {
 
 .meter-inner-element {
   -webkit-appearance: inherit;
-     -moz-appearance: inherit;
-          appearance: inherit;
+  -moz-appearance: inherit;
+  appearance: inherit;
   -webkit-box-sizing: inherit;
-     -moz-box-sizing: inherit;
-          box-sizing: inherit;
+  -moz-box-sizing: inherit;
+  box-sizing: inherit;
   height: 100%;
   width: 100%;
 }
 
 .meter-bar {
   background: #e6e6e6;
-  background: -webkit-gradient(linear, left top, left bottom, from(#e6e6e6), color-stop(#e6e6e6), color-stop(20%, #eeeeee), color-stop(45%, #cccccc), color-stop(55%, #cccccc));
-  background: -webkit-linear-gradient(#e6e6e6, #e6e6e6, #eeeeee 20%, #cccccc 45%, #cccccc 55%);
-  background: -moz-linear-gradient(#e6e6e6, #e6e6e6, #eeeeee 20%, #cccccc 45%, #cccccc 55%);
-  background: -o-linear-gradient(#e6e6e6, #e6e6e6, #eeeeee 20%, #cccccc 45%, #cccccc 55%);
-  background: linear-gradient(#e6e6e6, #e6e6e6, #eeeeee 20%, #cccccc 45%, #cccccc 55%);
+  background: -webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    from(#e6e6e6),
+    color-stop(#e6e6e6),
+    color-stop(20%, #eeeeee),
+    color-stop(45%, #cccccc),
+    color-stop(55%, #cccccc)
+  );
+  background: -webkit-linear-gradient(
+    #e6e6e6,
+    #e6e6e6,
+    #eeeeee 20%,
+    #cccccc 45%,
+    #cccccc 55%
+  );
+  background: -moz-linear-gradient(
+    #e6e6e6,
+    #e6e6e6,
+    #eeeeee 20%,
+    #cccccc 45%,
+    #cccccc 55%
+  );
+  background: -o-linear-gradient(
+    #e6e6e6,
+    #e6e6e6,
+    #eeeeee 20%,
+    #cccccc 45%,
+    #cccccc 55%
+  );
+  background: linear-gradient(
+    #e6e6e6,
+    #e6e6e6,
+    #eeeeee 20%,
+    #cccccc 45%,
+    #cccccc 55%
+  );
   height: 100%;
   width: 100%;
   -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 .meter-optimum-value,
@@ -53,14 +86,23 @@ meter {
   width: 100%;
   height: 100%;
   -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
   user-modify: read-only;
 }
 
 .meter-optimum-value {
   background: #ad7;
-  background: -webkit-gradient(linear, left top, left bottom, from(#ad7), color-stop(#ad7), color-stop(20%, #cea), color-stop(45%, #7a3), color-stop(55%, #7a3));
+  background: -webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    from(#ad7),
+    color-stop(#ad7),
+    color-stop(20%, #cea),
+    color-stop(45%, #7a3),
+    color-stop(55%, #7a3)
+  );
   background: -webkit-linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%);
   background: -moz-linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%);
   background: -o-linear-gradient(#ad7, #ad7, #cea 20%, #7a3 45%, #7a3 55%);
@@ -69,7 +111,16 @@ meter {
 
 .meter-suboptimum-value {
   background: #fe7;
-  background: -webkit-gradient(linear, left top, left bottom, from(#fe7), color-stop(#fe7), color-stop(20%, #ffc), color-stop(45%, #db3), color-stop(55%, #db3));
+  background: -webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    from(#fe7),
+    color-stop(#fe7),
+    color-stop(20%, #ffc),
+    color-stop(45%, #db3),
+    color-stop(55%, #db3)
+  );
   background: -webkit-linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%);
   background: -moz-linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%);
   background: -o-linear-gradient(#fe7, #fe7, #ffc 20%, #db3 45%, #db3 55%);
@@ -78,7 +129,16 @@ meter {
 
 .meter-even-less-good-value {
   background: #f77;
-  background: -webkit-gradient(linear, left top, left bottom, from(#f77), color-stop(#f77), color-stop(20%, #fcc), color-stop(45%, #d44), color-stop(55%, #d44));
+  background: -webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    from(#f77),
+    color-stop(#f77),
+    color-stop(20%, #fcc),
+    color-stop(45%, #d44),
+    color-stop(55%, #d44)
+  );
   background: -webkit-linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%);
   background: -moz-linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%);
   background: -o-linear-gradient(#f77, #f77, #fcc 20%, #d44 45%, #d44 55%);
