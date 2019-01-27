@@ -3,7 +3,7 @@
 Polyfill for the meter element
 
 [![npm](https://img.shields.io/npm/v/meter-polyfill.svg?style=flat-square)](https://www.npmjs.com/package/meter-polyfill) 
-[![npm](https://img.shields.io/npm/l/meter-polyfill.svg?style=flat-square)](https://www.npmjs.com/package/meter-polyfill)
+[![npm](https://img.shields.io/npm/l/meter-polyfill.svg?style=flat-square)](https://www.npmjs.com/package/meter-polyfill) [![Greenkeeper badge](https://badges.greenkeeper.io/fisker/meter-polyfill.svg)](https://greenkeeper.io/)
 
 ### NPM
 ```
