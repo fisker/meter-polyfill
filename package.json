@@ -43,6 +43,6 @@
     "prettier": "^1.12.1",
     "pretty-quick": "^1.4.1",
     "uglify-js": "^3.3.23",
-    "watchify": "^3.11.0"
+    "watchify": "^3.11.1"
   }
 }
