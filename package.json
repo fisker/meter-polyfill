@@ -9,7 +9,12 @@
     "url": "https://github.com/fisker/"
   },
   "homepage": "https://github.com/fisker/meter-polyfill",
-  "keywords": ["meter", "html", "html5", "polyfill"],
+  "keywords": [
+    "meter",
+    "html",
+    "html5",
+    "polyfill"
+  ],
   "scripts": {
     "precommit": "pretty-quick --staged",
     "dev": "gulp",
@@ -25,24 +30,24 @@
     "registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {
-    "browser-sync": "^2.24.4",
-    "gulp": "^4.0.0",
-    "gulp-autoprefixer": "^7.0.0",
-    "gulp-clean-css": "^4.0.0",
-    "gulp-concat": "^2.6.1",
-    "gulp-flatten": "^0.4.0",
-    "gulp-header": "^2.0.5",
-    "gulp-load-plugins": "^2.0.1",
-    "gulp-rename": "^2.0.0",
-    "gulp-replace": "^1.0.0",
-    "gulp-sass": "^4.0.1",
-    "gulp-size": "^3.0.0",
-    "gulp-sourcemaps": "^2.6.4",
-    "gulp-uglify": "^3.0.0",
-    "husky": "^4.0.0",
-    "prettier": "^1.12.1",
-    "pretty-quick": "^2.0.0",
-    "uglify-js": "^3.3.23",
-    "watchify": "^3.11.0"
+    "browser-sync": "2.26.7",
+    "gulp": "4.0.2",
+    "gulp-autoprefixer": "7.0.1",
+    "gulp-clean-css": "4.3.0",
+    "gulp-concat": "2.6.1",
+    "gulp-flatten": "0.4.0",
+    "gulp-header": "2.0.9",
+    "gulp-load-plugins": "2.0.2",
+    "gulp-rename": "2.0.0",
+    "gulp-replace": "1.0.0",
+    "gulp-sass": "4.0.2",
+    "gulp-size": "3.0.0",
+    "gulp-sourcemaps": "2.6.5",
+    "gulp-uglify": "3.0.2",
+    "husky": "4.2.3",
+    "prettier": "2.0.2",
+    "pretty-quick": "2.0.1",
+    "uglify-js": "3.8.0",
+    "watchify": "3.11.1"
   }
 }
