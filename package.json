@@ -45,7 +45,7 @@
     "gulp-sourcemaps": "2.6.5",
     "gulp-uglify": "3.0.2",
     "husky": "4.2.3",
-    "prettier": "2.0.4",
+    "prettier": "2.0.5",
     "pretty-quick": "2.0.1",
     "uglify-js": "3.9.1",
     "watchify": "3.11.1"
