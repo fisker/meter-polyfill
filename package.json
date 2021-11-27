@@ -46,7 +46,7 @@
     "gulp-uglify": "3.0.2",
     "husky": "4.3.6",
     "prettier": "2.5.0",
-    "pretty-quick": "3.1.0",
+    "pretty-quick": "3.1.2",
     "uglify-js": "3.12.3",
     "watchify": "3.11.1"
   }
