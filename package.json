@@ -47,7 +47,7 @@
     "husky": "4.3.6",
     "prettier": "2.5.0",
     "pretty-quick": "3.1.0",
-    "uglify-js": "3.12.3",
+    "uglify-js": "3.17.4",
     "watchify": "3.11.1"
   }
 }
